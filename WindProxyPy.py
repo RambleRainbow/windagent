@@ -137,7 +137,57 @@ class w:
     @staticmethod
     def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb):
         """获取日期序列数据"""
-        return WindData()
+        outdata = WindData()
+        outdata.ErrorCode = 0
+        outdata.StateCode = 0
+        outdata.RequestID = 0
+
+        # 处理输入参数
+        if isinstance(codes, str):
+            outdata.Codes = [code.strip() for code in codes.split(',')]
+        else:
+            outdata.Codes = codes
+
+        if isinstance(fields, str):
+            outdata.Fields = [field.strip() for field in fields.split(',')]
+        else:
+            outdata.Fields = fields
+
+        # 构建请求参数
+        params = {
+            'codes': ','.join(outdata.Codes),
+            'fields': ','.join(outdata.Fields),
+            'start_date': beginTime,
+            'end_date': endTime
+        }
+        if options:
+            params['options'] = options
+
+        try:
+            # 发送请求到wind_bridge服务
+            response = requests.post(
+                f"{wind_config.base_url}/wsd",
+                json=params,
+                timeout=wind_config.timeout
+            )
+            response.raise_for_status()
+
+            # 解析返回的JSON数据
+            result = response.json()
+
+            # 更新WindData对象
+            outdata.ErrorCode = 0
+            outdata.Codes = result.get('codes', [])
+            outdata.Fields = result.get('fields', [])
+            outdata.Data = result.get('data', [])
+            outdata.Times = result.get('times', [])
+
+        except requests.exceptions.RequestException as e:
+            # 请求失败时设置错误代码
+            outdata.ErrorCode = -1
+            outdata.Data = [f"请求失败: {str(e)}"]
+
+        return outdata
 
     @staticmethod
     def wss(codes, fields, options=None, *arga, **argb):
