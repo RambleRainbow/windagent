@@ -19,6 +19,13 @@ w.start()
 # 数据模型
 
 
+class EDBRequest(BaseModel):
+    codes: str | List[str]
+    start_date: str
+    end_date: str
+    options: Optional[str] = ""
+
+
 class WSSRequest(BaseModel):
     codes: str | List[str]  # 使用 | 语法
     fields: str | List[str]
@@ -105,6 +112,31 @@ async def get_wsd_data(request: WSDRequest):
 async def get_wset_data(request: WSETRequest):
     try:
         data = w.wset(request.report_name, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/edb")
+async def get_edb_data(request: EDBRequest):
+    try:
+        codes = request.codes if isinstance(
+            request.codes, str) else ",".join(request.codes)
+
+        data = w.edb(codes, request.start_date,
+                     request.end_date, request.options)
 
         if data.ErrorCode != 0:
             raise HTTPException(
