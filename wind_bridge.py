@@ -1,0 +1,130 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional, Union
+from WindPy import *
+import pandas as pd
+from datetime import datetime
+import uvicorn
+
+# 初始化FastAPI应用
+app = FastAPI(
+    title="Wind API Bridge",
+    description="Wind金融终端API的HTTP桥接服务",
+    version="1.0.0"
+)
+
+# 初始化Wind API
+w.start()
+
+# 数据模型
+
+
+class WSSRequest(BaseModel):
+    codes: str | List[str]  # 使用 | 语法
+    fields: str | List[str]
+    options: Optional[str] = ""
+
+
+class WSDRequest(BaseModel):
+    codes: str | List[str]
+    fields: str | List[str]
+    start_date: str
+    end_date: str
+    options: Optional[str] = ""
+
+
+class WSETRequest(BaseModel):
+    report_name: str
+    options: str
+
+# API路由
+
+
+@app.get("/")
+async def root():
+    return {"message": "Wind API Bridge Service"}
+
+
+@app.post("/wss")
+async def get_wss_data(request: WSSRequest):
+    try:
+        # 处理输入参数
+        codes = request.codes if isinstance(
+            request.codes, str) else ",".join(request.codes)
+        fields = request.fields if isinstance(
+            request.fields, str) else ",".join(request.fields)
+
+        # 调用Wind API
+        data = w.wss(codes, fields, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        # 转换结果为字典
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/wsd")
+async def get_wsd_data(request: WSDRequest):
+    try:
+        codes = request.codes if isinstance(
+            request.codes, str) else ",".join(request.codes)
+        fields = request.fields if isinstance(
+            request.fields, str) else ",".join(request.fields)
+
+        data = w.wsd(codes, fields, request.start_date,
+                     request.end_date, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/wset")
+async def get_wset_data(request: WSETRequest):
+    try:
+        data = w.wset(request.report_name, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "wind_connected": w.isconnected()}
+
+if __name__ == "__main__":
+    uvicorn.run("wind_bridge:app", host="0.0.0.0", port=8800, reload=True)
