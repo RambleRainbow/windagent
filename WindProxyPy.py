@@ -268,27 +268,194 @@ class w:
     @staticmethod
     def wset(tablename, options=None, *arga, **argb):
         """获取数据集"""
-        return WindData()
+        outdata = WindData()
+        outdata.ErrorCode = 0
+        outdata.StateCode = 0
+        outdata.RequestID = 0
+
+        # 构建请求参数
+        params = {
+            'report_name': tablename,
+            'options': options if options else ""
+        }
+
+        try:
+            # 发送请求到wind_bridge服务
+            response = requests.post(
+                f"{wind_config.base_url}/wset",
+                json=params,
+                timeout=wind_config.timeout
+            )
+            response.raise_for_status()
+
+            # 解析返回的JSON数据
+            result = response.json()
+
+            # 更新WindData对象
+            outdata.ErrorCode = 0
+            outdata.Codes = result.get('codes', [])
+            outdata.Fields = result.get('fields', [])
+            outdata.Data = result.get('data', [])
+            outdata.Times = result.get('times', [])
+
+        except requests.exceptions.RequestException as e:
+            # 请求失败时设置错误代码
+            outdata.ErrorCode = -1
+            outdata.Data = [f"请求失败: {str(e)}"]
+
+        return outdata
 
     @staticmethod
     def edb(codes, beginTime=None, endTime=None, options=None, *arga, **argb):
         """获取经济数据"""
-        return WindData()
+        outdata = WindData()
+        outdata.ErrorCode = 0
+        outdata.StateCode = 0
+        outdata.RequestID = 0
+
+        # 处理输入参数
+        if isinstance(codes, str):
+            outdata.Codes = [code.strip() for code in codes.split(',')]
+        else:
+            outdata.Codes = codes
+
+        # 构建请求参数
+        params = {
+            'codes': ','.join(outdata.Codes),
+            'start_date': beginTime,
+            'end_date': endTime
+        }
+        if options:
+            params['options'] = options
+
+        try:
+            # 发送请求到wind_bridge服务
+            response = requests.post(
+                f"{wind_config.base_url}/edb",
+                json=params,
+                timeout=wind_config.timeout
+            )
+            response.raise_for_status()
+
+            # 解析返回的JSON数据
+            result = response.json()
+
+            # 更新WindData对象
+            outdata.ErrorCode = 0
+            outdata.Codes = result.get('codes', [])
+            outdata.Fields = result.get('fields', [])
+            outdata.Data = result.get('data', [])
+            outdata.Times = result.get('times', [])
+
+        except requests.exceptions.RequestException as e:
+            # 请求失败时设置错误代码
+            outdata.ErrorCode = -1
+            outdata.Data = [f"请求失败: {str(e)}"]
+
+        return outdata
 
     @staticmethod
     def tdays(beginTime=None, endTime=None, options=None, *arga, **argb):
         """获取交易日序列"""
-        return WindData()
+        outdata = WindData()
+        outdata.ErrorCode = 0
+        outdata.StateCode = 0
+        outdata.RequestID = 0
+
+        # 构建请求参数
+        params = {
+            'start_date': beginTime,
+            'end_date': endTime
+        }
+        if options:
+            params['options'] = options
+
+        try:
+            response = requests.post(
+                f"{wind_config.base_url}/tdays",
+                json=params,
+                timeout=wind_config.timeout
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            outdata.ErrorCode = 0
+            outdata.Codes = result.get('codes', [])
+            outdata.Fields = result.get('fields', [])
+            outdata.Data = result.get('data', [])
+            outdata.Times = result.get('times', [])
+        except requests.exceptions.RequestException as e:
+            outdata.ErrorCode = -1
+            outdata.Data = [f"请求失败: {str(e)}"]
+        return outdata
 
     @staticmethod
     def tdayscount(beginTime=None, endTime=None, options=None, *arga, **argb):
         """获取交易日天数"""
-        return WindData()
+        outdata = WindData()
+        outdata.ErrorCode = 0
+        outdata.StateCode = 0
+        outdata.RequestID = 0
+
+        params = {
+            'start_date': beginTime,
+            'end_date': endTime
+        }
+        if options:
+            params['options'] = options
+
+        try:
+            response = requests.post(
+                f"{wind_config.base_url}/tdayscount",
+                json=params,
+                timeout=wind_config.timeout
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            outdata.ErrorCode = 0
+            outdata.Codes = result.get('codes', [])
+            outdata.Fields = result.get('fields', [])
+            outdata.Data = result.get('data', [])
+            outdata.Times = result.get('times', [])
+        except requests.exceptions.RequestException as e:
+            outdata.ErrorCode = -1
+            outdata.Data = [f"请求失败: {str(e)}"]
+        return outdata
 
     @staticmethod
     def tdaysoffset(offset, beginTime=None, options=None, *arga, **argb):
         """获取偏移交易日"""
-        return WindData()
+        outdata = WindData()
+        outdata.ErrorCode = 0
+        outdata.StateCode = 0
+        outdata.RequestID = 0
+
+        params = {
+            'offset': offset,
+            'start_date': beginTime
+        }
+        if options:
+            params['options'] = options
+
+        try:
+            response = requests.post(
+                f"{wind_config.base_url}/tdaysoffset",
+                json=params,
+                timeout=wind_config.timeout
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            outdata.ErrorCode = 0
+            outdata.Codes = result.get('codes', [])
+            outdata.Fields = result.get('fields', [])
+            outdata.Data = result.get('data', [])
+            outdata.Times = result.get('times', [])
+        except requests.exceptions.RequestException as e:
+            outdata.ErrorCode = -1
+            outdata.Data = [f"请求失败: {str(e)}"]
+        return outdata
 
     @staticmethod
     def wsd2df(data):
