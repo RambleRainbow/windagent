@@ -1,0 +1,46 @@
+[MASTER]
+# 递归查找Python模块
+recursive=yes
+# 忽略的文件或目录
+ignore=CVS,.git,__pycache__
+
+[MESSAGES CONTROL]
+# 禁用一些不太重要的警告
+disable=C0111,  # missing-docstring
+        C0103,  # invalid-name
+        W0511,  # fixme
+        C0114,  # missing-module-docstring
+        C0115,  # missing-class-docstring
+        C0116   # missing-function-docstring
+        R0903,  # too-few-public-methods
+        R0913   # too-many-arguments
+
+[FORMAT]
+# 最大行长度
+max-line-length=120
+# 缩进空格数
+indent-string='    '
+
+[BASIC]
+# 变量命名规则
+variable-rgx=[a-z_][a-z0-9_]{1,30}$
+# 函数命名规则
+function-rgx=[a-z_][a-z0-9_]{1,30}$
+# 方法命名规则
+method-rgx=[a-z_][a-z0-9_]{1,30}$
+# 属性命名规则
+attr-rgx=[a-z_][a-z0-9_]{1,30}$
+# 参数命名规则
+argument-rgx=[a-z_][a-z0-9_]{1,30}$
+
+[REPORTS]
+# 输出格式
+output-format=text
+# 显示评分
+score=yes
+
+[SIMILARITIES]
+# 最小相似行数
+min-similarity-lines=4
+# 忽略导入
+ignore-imports=yes

@@ -1,10 +1,8 @@
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional, Union
-from WindPy import *
-import pandas as pd
-from datetime import datetime
 import uvicorn
+from WindPy import w
 
 # 初始化FastAPI应用
 app = FastAPI(
@@ -69,6 +67,12 @@ class TDaysOffsetRequest(BaseModel):
 
 @app.get("/")
 async def root():
+    """
+    根路由处理函数，返回API服务的基本信息。
+
+    Returns:
+        dict: 包含服务信息的字典，格式为 {"message": "Wind API Bridge Service"}
+    """
     return {"message": "Wind API Bridge Service"}
 
 
@@ -98,7 +102,7 @@ async def get_wss_data(request: WSSRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/wsd")
@@ -125,7 +129,7 @@ async def get_wsd_data(request: WSDRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/wset")
@@ -146,7 +150,7 @@ async def get_wset_data(request: WSETRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/edb")
@@ -171,7 +175,7 @@ async def get_edb_data(request: EDBRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/tdays")
@@ -192,7 +196,7 @@ async def get_tdays_data(request: TDaysRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/tdayscount")
@@ -214,7 +218,7 @@ async def get_tdayscount_data(request: TDaysCountRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/tdaysoffset")
@@ -236,7 +240,7 @@ async def get_tdaysoffset_data(request: TDaysOffsetRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/health")

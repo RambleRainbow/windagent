@@ -4,7 +4,6 @@ WindPy代理类
 用于模拟Wind Python接口的基础框架结构
 """
 
-from typing import Optional
 import pandas as pd
 import requests
 import os
@@ -378,7 +377,7 @@ class w:
             )
             response.raise_for_status()
             result = response.json()
-            
+
             outdata.ErrorCode = 0
             outdata.Codes = result.get('codes', [])
             outdata.Fields = result.get('fields', [])
@@ -412,7 +411,7 @@ class w:
             )
             response.raise_for_status()
             result = response.json()
-            
+
             outdata.ErrorCode = 0
             outdata.Codes = result.get('codes', [])
             outdata.Fields = result.get('fields', [])
@@ -446,7 +445,7 @@ class w:
             )
             response.raise_for_status()
             result = response.json()
-            
+
             outdata.ErrorCode = 0
             outdata.Codes = result.get('codes', [])
             outdata.Fields = result.get('fields', [])
