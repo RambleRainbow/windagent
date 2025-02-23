@@ -44,6 +44,26 @@ class WSETRequest(BaseModel):
     report_name: str
     options: str
 
+# 数据模型
+
+
+class TDaysRequest(BaseModel):
+    start_date: str
+    end_date: str
+    options: Optional[str] = ""
+
+
+class TDaysCountRequest(BaseModel):
+    start_date: str
+    end_date: str
+    options: Optional[str] = ""
+
+
+class TDaysOffsetRequest(BaseModel):
+    start_date: str
+    offset: int
+    options: Optional[str] = ""
+
 # API路由
 
 
@@ -137,6 +157,71 @@ async def get_edb_data(request: EDBRequest):
 
         data = w.edb(codes, request.start_date,
                      request.end_date, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/tdays")
+async def get_tdays_data(request: TDaysRequest):
+    try:
+        data = w.tdays(request.start_date, request.end_date, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/tdayscount")
+async def get_tdayscount_data(request: TDaysCountRequest):
+    try:
+        data = w.tdayscount(request.start_date,
+                            request.end_date, request.options)
+
+        if data.ErrorCode != 0:
+            raise HTTPException(
+                status_code=400, detail=f"Wind API Error: {data.ErrorCode}")
+
+        result = {
+            "codes": data.Codes,
+            "fields": data.Fields,
+            "data": data.Data,
+            "times": data.Times
+        }
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/tdaysoffset")
+async def get_tdaysoffset_data(request: TDaysOffsetRequest):
+    try:
+        data = w.tdaysoffset(
+            request.offset, request.start_date, request.options)
 
         if data.ErrorCode != 0:
             raise HTTPException(
