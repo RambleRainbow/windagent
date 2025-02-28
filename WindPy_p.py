@@ -1,5 +1,16 @@
 from typing import Optional, List, Any, Union
 from datetime import datetime, date
+import inspect
+import os
+import logging
+
+# 配置日志
+logging.basicConfig(
+    filename='/Users/hongling/Dev/pytest/wind.log',  # 日志文件路径
+    level=logging.DEBUG,  # 日志级别
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 日志格式
+    datefmt='%Y-%m-%d %H:%M:%S'  # 日期格式
+)
 
 
 class w:
@@ -293,9 +304,22 @@ class w:
             return
 
     @staticmethod
-    def start(options: Optional[str] = None, waitTime: int = 120, *arga, **argb) -> WindData:
+    def start(options=None, waitTime=120, *arga, **argb) -> WindData:
         """启动Wind接口"""
-        return w.WindData()
+        # 配置日志
+        logger = logging.getLogger("WindPy")
+        logger.info("启动Wind接口")
+
+        # 记录启动参数
+        if options:
+            logger.debug(f"启动参数: {options}")
+        if waitTime != 120:
+            logger.debug(f"等待时间: {waitTime}")
+
+        # 记录启动结果
+        result = w.WindData()
+        logger.info("Wind接口启动完成")
+        return result
 
     @staticmethod
     def stop() -> WindData:
@@ -310,7 +334,7 @@ class w:
     @staticmethod
     def isconnected() -> bool:
         """检查连接状态"""
-        return False
+        return True
 
     @staticmethod
     def setLanguage(lang: str) -> None:
@@ -318,35 +342,133 @@ class w:
         pass
 
     @staticmethod
-    def wsd(codes: Union[str, List[str]], fields: Union[str, List[str]],
-            beginTime: Optional[str] = None, endTime: Optional[str] = None,
-            options: Optional[str] = None, *arga, **argb) -> WindData:
+    def wset(tablename, options=None, *arga, **argb):
+        """wset获取数据集"""
+        logger = logging.getLogger("WindPy")
+        logger.info(f"调用 wset 函数: tablename={tablename}")
+        logger.debug(f"原始参数: options={options}, arga={arga}, argb={argb}")
+
+        tablename = w.__dargArr2str(tablename)
+        logger.debug(f"转换后的表名: tablename={tablename}")
+
+        options = w.__t2options(options, arga, argb)
+        logger.debug(f"转换后的选项: options={options}")
+
+        if (tablename == None or options == None):
+            logger.error("无效参数: tablename或options为None")
+            print('Invalid arguments!')
+            return
+
+        logger.info(f"创建WindData对象并返回结果")
+        out = w.WindData()
+        return out
+
+    def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb) -> WindData:
         """获取日期序列数据"""
+        logger = logging.getLogger("WindPy")
+        logger.info(f"调用 wsd 函数: codes={codes}, fields={fields}")
+
+        if (endTime == None):
+            endTime = datetime.today().strftime("%Y-%m-%d")
+            logger.debug(f"未提供结束日期，使用当前日期: {endTime}")
+        if (beginTime == None):
+            beginTime = endTime
+            logger.debug(f"未提供开始日期，使用结束日期: {beginTime}")
+
+        logger.debug(f"处理参数: beginTime={beginTime}, endTime={endTime}")
+
+        codes = w.__dargArr2str(codes)
+        fields = w.__dargArr2str(fields)
+        options = w.__t2options(options, arga, argb)
+
+        logger.debug(
+            f"转换后参数: codes={codes}, fields={fields}, options={options}")
+        logger.info("wsd 函数执行完成，返回结果")
+
         return w.WindData()
 
-    # ... 其他API方法的框架实现 ...
+    @staticmethod
+    def wss(codes, fields, options=None, *arga, **argb):
+        """wss获取快照数据"""
+        logger = logging.getLogger("WindPy")
+        logger.info(f"调用 wss 函数: codes={codes}, fields={fields}")
+        logger.debug(f"原始参数: options={options}, arga={arga}, argb={argb}")
+
+        codes = w.__dargArr2str(codes)
+        logger.debug(f"转换后的代码: codes={codes}")
+
+        fields = w.__dargArr2str(fields)
+        logger.debug(f"转换后的字段: fields={fields}")
+
+        options = w.__t2options(options, arga, argb)
+        logger.debug(f"转换后的选项: options={options}")
+
+        if (codes == None or fields == None or options == None):
+            logger.error("无效参数: codes、fields或options为None")
+            print('Invalid arguments!')
+            return
+
+        logger.info("创建WindData对象并返回结果")
+        out = w.WindData()
+        return out
 
     @staticmethod
-    def __targ2str(arg: Any) -> Optional[List[str]]:
-        """参数转字符串"""
+    def __t2options(options, arga, argb):
+        options = w.__dargArr2str(options)
+        if (options == None):
+            return None
+
+        for i in range(len(arga)):
+            v = w.__dargArr2str(arga[i])
+            if (v == None):
+                continue
+            else:
+                if (options == ""):
+                    options = v
+                else:
+                    options = options+";"+v
+
+        keys = argb.keys()
+        for key in keys:
+            v = w.__targArr2str(argb[key])
+            if (v == None or v == ""):
+                continue
+            else:
+                if (options == ""):
+                    options = str(key)+"="+v
+                else:
+                    options = options+";"+str(key)+"="+v
+        return options
+
+    @staticmethod
+    def __targ2str(arg):
+        if (arg == None):
+            return [""]
+        if (arg == ""):
+            return [""]
+        if (isinstance(arg, str)):
+            return [arg]
+        if (isinstance(arg, list)):
+            return [str(x) for x in arg]
+        if (isinstance(arg, tuple)):
+            return [str(x) for x in arg]
+        if (isinstance(arg, float) or isinstance(arg, int)):
+            return [str(arg)]
+        if (str(type(arg)) == "<type 'unicode'>"):
+            return [arg]
         return None
 
     @staticmethod
-    def __targArr2str(arg: Any) -> Optional[str]:
-        """参数数组转字符串"""
-        return None
+    def __targArr2str(arg):
+        v = w.__targ2str(arg)
+        if (v == None):
+            return None
+        return "$$".join(v)
 
     @staticmethod
-    def __dargArr2str(arg: Any) -> Optional[str]:
-        """参数数组转字符串"""
-        return None
-
-    @staticmethod
-    def __d2options(options: Optional[str], arga: tuple, argb: dict) -> Optional[str]:
-        """转换选项参数"""
-        return None
-
-    @staticmethod
-    def __t2options(options: Optional[str], arga: tuple, argb: dict) -> Optional[str]:
-        """转换选项参数"""
-        return None
+    def __dargArr2str(arg):
+        v = w.__targ2str(arg)
+        if (v == None):
+            return None
+        return ";".join(v)
+    __dargArr2str = staticmethod(__dargArr2str)
