@@ -21,6 +21,11 @@ logging.basicConfig(
 logger = logging.getLogger("WindPy")
 logger.info(f"使用API基础URL: {base_url}")
 
+REFLECT = [
+    {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
+        ["W", "Week"], ["D", "daily"]]},
+]
+
 
 class w:
     """Wind Python接口代理类"""
@@ -529,3 +534,135 @@ class w:
         },
             timeout=(5, 10))
         return w.WindData()
+
+    @staticmethod
+    def tdaysoffset(offset, beginTime=None, options=None, *arga, **argb):
+        if offset is None:
+            offset = -1
+        if beginTime is None:
+            beginTime = datetime.now().strftime('%Y-%m-%d')
+        else:
+            if isinstance(beginTime, (datetime, date)):
+                beginTime = beginTime.strftime('%Y-%m-%d')
+            else:
+                beginTime = str(beginTime)
+
+        if options is not None:
+            if isinstance(options, str):
+                options = options.split(';')
+            else:
+                options = w.unnamedParams2StrArr(options)
+        all_params = [beginTime, f'offset={offset}'] + options
+        arga_argb_list = w.combineParams(arga, argb)
+        all_params.extend(arga_argb_list)
+
+        # 对all_params中的每个元素进行映射转换
+        all_params = [w.fieldValueReflect(
+            'tdaysoffset', param) for param in all_params]
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+            "command": "TDAYSOFFSET('" + "','".join(all_params) + "')",
+            "isSuccess": True,
+            "ip": "",
+            "uid": 4136117
+        },
+            timeout=(5, 10))
+        return w.WindData()
+
+    @staticmethod
+    def fieldValueReflect(func, param):
+        """
+        判断param是key=value的结构才进行，否则不变
+        将param拆分成field和value两个字段，调用enumValueReflect进行映射,得到newValue
+        重新拼装成field=newValue返回
+        """
+        logger = logging.getLogger("WindPy")
+
+        # 参数健壮性处理
+        if func is None or param is None:
+            logger.warning(
+                f"fieldValueReflect参数存在None值: func={func}, param={param}")
+            return param
+
+        # 如果param不是字符串类型，转换为字符串
+        if not isinstance(param, str):
+            param = str(param)
+
+        # 检查是否是key=value结构
+        if '=' not in param:
+            logger.debug(f"参数不是key=value结构: {param}")
+            return param
+
+        try:
+            # 拆分field和value
+            field, value = param.split('=', 1)
+
+            # 去除首尾空格
+            field = field.strip()
+            value = value.strip()
+
+            # 调用enumValueReflect进行映射
+            new_value = w.enumValueReflect(func, field, value)
+
+            # 重新拼装成field=newValue
+            result = f"{field}={new_value}"
+            logger.debug(f"值映射结果: {param} -> {result}")
+            return result
+
+        except Exception as e:
+            logger.error(f"处理参数时发生错误: {str(e)}")
+            return param
+
+        # 参数健壮性处理
+
+    @staticmethod
+    def enumValueReflect(func, field, oldValue):
+        """
+        在REFLECT数组中查找匹配的func和field，并返回对应的值
+        参数:
+            func: 函数名
+            field: 字段名
+            oldValue: 原始值
+        返回:
+            如果找到匹配项，返回映射后的值；否则返回原始值
+        """
+        logger = logging.getLogger("WindPy")
+
+        # 参数健壮性处理
+        if func is None or field is None or oldValue is None:
+            logger.warning(
+                f"enumValueReflect参数存在None值: func={func}, field={field}, oldValue={oldValue}")
+            return oldValue
+
+        # 转换为大写以进行不区分大小写的比较
+        func_upper = func.upper() if isinstance(func, str) else ""
+        field_upper = field.upper() if isinstance(field, str) else ""
+        old_value_str = str(oldValue).upper() if oldValue is not None else ""
+
+        logger.debug(
+            f"查找映射: func={func_upper}, field={field_upper}, oldValue={old_value_str}")
+
+        # 在REFLECT数组中查找匹配项
+        for item in REFLECT:
+            if not isinstance(item, dict):
+                continue
+
+            item_func = item.get("func", "").upper()
+            item_field = item.get("field", "").upper()
+
+            # 检查func和field是否匹配
+            if item_func == func_upper and item_field == field_upper:
+                values = item.get("values", [])
+
+                # 在values中查找匹配的oldValue
+                for value_pair in values:
+                    if isinstance(value_pair, list) and len(value_pair) >= 2:
+                        if str(value_pair[0]).upper() == old_value_str:
+                            logger.info(f"找到映射: {oldValue} -> {value_pair[1]}")
+                            return value_pair[1]
+
+                logger.debug(f"未找到值映射: {oldValue}")
+                break
+
+        # 如果没有找到匹配项，返回原始值
+        return oldValue
