@@ -3,14 +3,26 @@ from datetime import datetime, date
 import inspect
 import os
 import logging
+import requests
+import os
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
+
+# 获取base_url，如果环境变量不存在则使用默认值
+base_url = os.getenv('BASEURL_CLOUD', 'http://10.0.0.1:1234')
 
 # 配置日志
 logging.basicConfig(
-    filename='/Users/hongling/Dev/pytest/wind.log',  # 日志文件路径
-    level=logging.DEBUG,  # 日志级别
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 日志格式
-    datefmt='%Y-%m-%d %H:%M:%S'  # 日期格式
+    filename='/Users/hongling/Dev/pytest/wind.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
+
+logger = logging.getLogger("WindPy")
+logger.info(f"使用API基础URL: {base_url}")
 
 
 class w:
@@ -365,52 +377,126 @@ class w:
 
     def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb) -> WindData:
         """获取日期序列数据"""
-        logger = logging.getLogger("WindPy")
-        logger.info(f"调用 wsd 函数: codes={codes}, fields={fields}")
+        all_params = []
+        if codes is not None:
+            codes_str = w.__dargArr2str(codes)
+        else:
+            codes = ''
+        all_params.append(codes_str)
 
-        if (endTime == None):
-            endTime = datetime.today().strftime("%Y-%m-%d")
-            logger.debug(f"未提供结束日期，使用当前日期: {endTime}")
-        if (beginTime == None):
-            beginTime = endTime
-            logger.debug(f"未提供开始日期，使用结束日期: {beginTime}")
+        if fields is not None:
+            fields_str = w.__dargArr2str(fields)
+        else:
+            fields_str = ''
+        all_params.append(fields_str)
 
-        logger.debug(f"处理参数: beginTime={beginTime}, endTime={endTime}")
+        if beginTime is None:
+            beginTime = datetime.now().strftime('%Y%m%d')
+        all_params.append(beginTime)
 
-        codes = w.__dargArr2str(codes)
-        fields = w.__dargArr2str(fields)
-        options = w.__t2options(options, arga, argb)
+        if endTime is None:
+            endTime = datetime.now().striftime('%Y%m%d')
+        all_params.append(endTime)
 
-        logger.debug(
-            f"转换后参数: codes={codes}, fields={fields}, options={options}")
-        logger.info("wsd 函数执行完成，返回结果")
+        if options is not None:
+            options_str = w.combineParams(options, argb=None)
+            all_params.extend(options_str)
+        else:
+            options_str = ''
 
+        arg_list = w.combineParams(arga, argb)
+        if arg_list:
+            all_params.extend(arg_list)
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command',
+                            json={
+                                'command': "WSD('" + "','".join(all_params) + "')",
+                                'isSuccess': True,
+                                'ip': '',
+                                'uid': 4136117
+                            },
+                            timeout=(5, 10)
+                            )
         return w.WindData()
 
     @staticmethod
     def wss(codes, fields, options=None, *arga, **argb):
         """wss获取快照数据"""
-        logger = logging.getLogger("WindPy")
-        logger.info(f"调用 wss 函数: codes={codes}, fields={fields}")
-        logger.debug(f"原始参数: options={options}, arga={arga}, argb={argb}")
 
-        codes = w.__dargArr2str(codes)
-        logger.debug(f"转换后的代码: codes={codes}")
+        # 将所有参数合并成一个数组
+        all_params = []
 
-        fields = w.__dargArr2str(fields)
-        logger.debug(f"转换后的字段: fields={fields}")
+        # 处理codes参数
+        if codes is not None:
+            codes_str = w.__dargArr2str(codes)
+            if codes_str is not None:
+                all_params.append(codes_str)
 
-        options = w.__t2options(options, arga, argb)
-        logger.debug(f"转换后的选项: options={options}")
+        # 处理fields参数
+        if fields is not None:
+            fields_str = w.__dargArr2str(fields)
+            if fields_str:
+                all_params.append(fields_str)
 
-        if (codes == None or fields == None or options == None):
-            logger.error("无效参数: codes、fields或options为None")
-            print('Invalid arguments!')
-            return
+        # 处理options参数
+        if options is not None:
+            options_list = w.combineParams(options, argb=None)
+            if options_list:
+                all_params.extend(options_list)
 
-        logger.info("创建WindData对象并返回结果")
-        out = w.WindData()
-        return out
+        # 处理位置参数和关键字参数
+        arga_argb_list = w.combineParams(arga, argb)
+        if arga_argb_list:
+            all_params.extend(arga_argb_list)
+
+        res = requests.post(
+            f'{base_url}/sectormgmt/cloud/command',
+            json={
+                'command': "WSS('" + "','".join(all_params) + "')",
+                'isSuccess': True,
+                'ip': '',
+                'uid': 4136117
+            },
+            timeout=(5, 10)
+        )
+
+        print(res)
+        return w.WindData()
+
+    @staticmethod
+    def combineParams(arga, argb):
+        """将所有参数转换为字符串并合并到一个数组中"""
+        result = []
+
+        # 处理位置参数
+        if arga is not None:
+            # 确保arga是可迭代的
+            if not isinstance(arga, (list, tuple)):
+                arga = [arga]
+
+            for arg in arga:
+                if arg is not None:
+                    # 如果是列表或元组，将每个元素转为字符串
+                    if isinstance(arg, (list, tuple)):
+                        for item in arg:
+                            if item is not None:
+                                result.append(str(item))
+                    else:
+                        result.append(str(arg))
+
+        # 处理关键字参数
+        if argb is not None:
+            for key, value in argb.items():
+                if value is not None:
+                    # 如果值是列表或元组，为每个元素创建"key=value"形式
+                    if isinstance(value, (list, tuple)):
+                        for item in value:
+                            if item is not None:
+                                result.append(f"{key}={item}")
+                    else:
+                        result.append(f"{key}={value}")
+
+        return result
 
     @staticmethod
     def __t2options(options, arga, argb):
@@ -470,5 +556,5 @@ class w:
         v = w.__targ2str(arg)
         if (v == None):
             return None
-        return ";".join(v)
+        return ",".join(v)
     __dargArr2str = staticmethod(__dargArr2str)
