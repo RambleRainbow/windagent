@@ -379,13 +379,13 @@ class w:
         """获取日期序列数据"""
         all_params = []
         if codes is not None:
-            codes_str = w.__dargArr2str(codes)
+            codes_str = ','.join(w.unnamedParams2StrArr(codes))
         else:
-            codes = ''
+            codes_str = ''
         all_params.append(codes_str)
 
         if fields is not None:
-            fields_str = w.__dargArr2str(fields)
+            fields_str = ','.join(w.unnamedParams2StrArr(fields))
         else:
             fields_str = ''
         all_params.append(fields_str)
@@ -426,13 +426,13 @@ class w:
 
         # 处理codes参数
         if codes is not None:
-            codes_str = w.__dargArr2str(codes)
+            codes_str = ','.join(w.unnamedParams2StrArr(codes))
             if codes_str is not None:
                 all_params.append(codes_str)
 
         # 处理fields参数
         if fields is not None:
-            fields_str = w.__dargArr2str(fields)
+            fields_str = ','.join(w.unnamedParams2StrArr(fields))
             if fields_str:
                 all_params.append(fields_str)
 
@@ -499,64 +499,3 @@ class w:
         if narr is not None:
             result.extend(narr)
         return result
-
-    @staticmethod
-    def __t2options(options, arga, argb):
-        options = w.__dargArr2str(options)
-        if (options == None):
-            return None
-
-        for i in range(len(arga)):
-            v = w.__dargArr2str(arga[i])
-            if (v == None):
-                continue
-            else:
-                if (options == ""):
-                    options = v
-                else:
-                    options = options+";"+v
-
-        keys = argb.keys()
-        for key in keys:
-            v = w.__targArr2str(argb[key])
-            if (v == None or v == ""):
-                continue
-            else:
-                if (options == ""):
-                    options = str(key)+"="+v
-                else:
-                    options = options+";"+str(key)+"="+v
-        return options
-
-    @staticmethod
-    def __targ2str(arg):
-        if (arg == None):
-            return [""]
-        if (arg == ""):
-            return [""]
-        if (isinstance(arg, str)):
-            return [arg]
-        if (isinstance(arg, list)):
-            return [str(x) for x in arg]
-        if (isinstance(arg, tuple)):
-            return [str(x) for x in arg]
-        if (isinstance(arg, float) or isinstance(arg, int)):
-            return [str(arg)]
-        if (str(type(arg)) == "<type 'unicode'>"):
-            return [arg]
-        return None
-
-    @staticmethod
-    def __targArr2str(arg):
-        v = w.__targ2str(arg)
-        if (v == None):
-            return None
-        return "$$".join(v)
-
-    @staticmethod
-    def __dargArr2str(arg):
-        v = w.__targ2str(arg)
-        if (v == None):
-            return None
-        return ",".join(v)
-    __dargArr2str = staticmethod(__dargArr2str)
