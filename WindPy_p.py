@@ -23,7 +23,7 @@ logger.info(f"使用API基础URL: {base_url}")
 
 REFLECT = [
     {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
-        ["W", "Week"], ["D", "daily"]]},
+        ["W", "weekly"], ["D", "daily"]]},
 ]
 
 
