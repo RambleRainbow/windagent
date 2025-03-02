@@ -30,3 +30,6 @@ env/
 
 # Misc
 .DS_Store
+
+# Log
+*.log
