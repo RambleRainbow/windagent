@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, date
 import os
 import logging
 import requests
@@ -496,3 +496,36 @@ class w:
         if narr is not None:
             result.extend(narr)
         return result
+
+    @staticmethod
+    def tdays(begin_time, end_time, options=None, *arga, **argb):
+        all_params = []
+        if end_time is None:
+            end_time = datetime.now().strftime('%Y-%m-%d')
+        if begin_time is None:
+            begin_time = end_time
+        if isinstance(begin_time, (datetime, date)):
+            begin_time = begin_time.strftime('%Y-%m-%d')
+        else:
+            begin_time = str(begin_time)
+        if isinstance(end_time, (datetime, date)):
+            end_time = end_time.strftime('%Y-%m-%d')
+        else:
+            end_time = str(end_time)
+        all_params.append(begin_time)
+        all_params.append(end_time)
+        if options is not None:
+            options_list = w.unnamedParams2StrArr(options)
+            if options_list:
+                all_params.extend(options_list)
+        arga_argb_list = w.combineParams(arga, argb)
+        all_params.extend(arga_argb_list)
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+            "command": "TDAYS('" + "','".join(all_params) + "')",
+            "isSuccess": True,
+            "ip": "",
+            "uid": 4136117
+        },
+            timeout=(5, 10))
+        return w.WindData()
