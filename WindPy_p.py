@@ -666,3 +666,33 @@ class w:
 
         # 如果没有找到匹配项，返回原始值
         return oldValue
+
+    @staticmethod
+    def tdayscount(beginTime, endTime, options=None, *arga, **argb):
+        all_params = []
+        if beginTime is None:
+            beginTime = datetime.now().strftime('%Y-%m-%d')
+        else:
+            if isinstance(beginTime, (datetime, date)):
+                beginTime = beginTime.strftime('%Y-%m-%d')
+            else:
+                beginTime = str(beginTime)
+        if endTime is None:
+            endTime = beginTime
+        else:
+            if isinstance(endTime, (datetime, date)):
+                endTime = endTime.strftime('%Y-%m-%d')
+            else:
+                endTime = str(endTime)
+        all_params.extend([beginTime, endTime])
+        all_params.extend(w.unnamedParams2StrArr(options))
+        all_params.extend(w.unnamedParams2StrArr(arga))
+        all_params.extend(w.namedParams2StrArr(argb))
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+            "command": f"TDAYSCOUNT('" + "','".join(all_params) + "')",
+            "isSuccess": True,
+            "ip": "",
+            "uid": 4136117
+        }, timeout=(5, 10))
+        return w.WindData()

@@ -151,6 +151,29 @@ class TestWindPy(unittest.TestCase):
             timeout=(5, 10)
         )
 
+    @patch('requests.post')
+    def test_tdayscount(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'ErrorCode': 0,
+            'Data': ['模拟的WSS数据']
+        }
+        mock_post.return_value = mock_response
+        w.tdayscount("2025-01-01", "2025-02-01",
+                     "TradingCalendar=SZSE")
+
+        mock_post.assert_called_once_with(
+            f'{base_url}/sectormgmt/cloud/command',
+            json={
+                "command": "TDAYSCOUNT('2025-01-01','2025-02-01','TradingCalendar=SZSE')",
+                "isSuccess": True,
+                "ip": "",
+                "uid": 4136117
+            },
+            timeout=(5, 10)
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
