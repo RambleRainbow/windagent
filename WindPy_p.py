@@ -399,10 +399,8 @@ class w:
         all_params.append(endTime)
 
         if options is not None:
-            options_str = w.combineParams(options, argb=None)
-            all_params.extend(options_str)
-        else:
-            options_str = ''
+            options_list = w.unnamedParams2StrArr(options)
+            all_params.extend(options_list)
 
         arg_list = w.combineParams(arga, argb)
         if arg_list:
@@ -440,7 +438,7 @@ class w:
 
         # 处理options参数
         if options is not None:
-            options_list = w.combineParams(options, argb=None)
+            options_list = w.unnamedParams2StrArr(options)
             if options_list:
                 all_params.extend(options_list)
 
@@ -464,38 +462,42 @@ class w:
         return w.WindData()
 
     @staticmethod
-    def combineParams(arga, argb):
-        """将所有参数转换为字符串并合并到一个数组中"""
+    def unnamedParams2StrArr(arga):
+        """将所有未命名参数转换为字符串数组"""
         result = []
-
-        # 处理位置参数
         if arga is not None:
             # 确保arga是可迭代的
             if not isinstance(arga, (list, tuple)):
                 arga = [arga]
-
             for arg in arga:
-                if arg is not None:
-                    # 如果是列表或元组，将每个元素转为字符串
-                    if isinstance(arg, (list, tuple)):
-                        for item in arg:
-                            if item is not None:
-                                result.append(str(item))
-                    else:
-                        result.append(str(arg))
+                if isinstance(arg, str):
+                    result.append(arg)
+                else:
+                    result.append(str(arg))
+        return result
 
-        # 处理关键字参数
+    @staticmethod
+    def namedParams2StrArr(argb):
+        """将所有命名参数转换为字符串数组"""
+        result = []
         if argb is not None:
             for key, value in argb.items():
-                if value is not None:
-                    # 如果值是列表或元组，为每个元素创建"key=value"形式
-                    if isinstance(value, (list, tuple)):
-                        for item in value:
-                            if item is not None:
-                                result.append(f"{key}={item}")
-                    else:
-                        result.append(f"{key}={value}")
+                if isinstance(value, str):
+                    result.append(key + '=' + value)
+                else:
+                    result.append(key + '=' + str(value))
+        return result
 
+    @staticmethod
+    def combineParams(arga, argb):
+        """将所有参数转换为字符串并合并到一个数组中"""
+        result = []
+        uarr = w.unnamedParams2StrArr(arga)
+        narr = w.namedParams2StrArr(argb)
+        if uarr is not None:
+            result.extend(uarr)
+        if narr is not None:
+            result.extend(narr)
         return result
 
     @staticmethod
