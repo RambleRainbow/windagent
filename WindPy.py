@@ -1,6 +1,5 @@
 from datetime import datetime, date, timedelta
 import os
-import logging
 import requests
 from dotenv import load_dotenv
 import pandas as pd
@@ -10,17 +9,6 @@ load_dotenv()
 
 # 获取base_url，如果环境变量不存在则使用默认值
 base_url = os.getenv('BASEURL_CLOUD', 'http://10.0.0.1:1234')
-
-# 配置日志
-logging.basicConfig(
-    filename='/Users/hongling/Dev/pytest/wind.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-logger = logging.getLogger("WindPy")
-logger.info(f"使用API基础URL: {base_url}")
 
 REFLECT = [
     {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
@@ -343,22 +331,6 @@ class w:
     @staticmethod
     def wset(tablename, options=None, *arga, **argb):
         """wset获取数据集"""
-        logger = logging.getLogger("WindPy")
-        logger.info(f"调用 wset 函数: tablename={tablename}")
-        logger.debug(f"原始参数: options={options}, arga={arga}, argb={argb}")
-
-        tablename = w.__dargArr2str(tablename)
-        logger.debug(f"转换后的表名: tablename={tablename}")
-
-        options = w.__t2options(options, arga, argb)
-        logger.debug(f"转换后的选项: options={options}")
-
-        if (tablename == None or options == None):
-            logger.error("无效参数: tablename或options为None")
-            print('Invalid arguments!')
-            return
-
-        logger.info(f"创建WindData对象并返回结果")
         out = w.WindData()
         return out
 
@@ -629,12 +601,9 @@ class w:
         将param拆分成field和value两个字段，调用enumValueReflect进行映射,得到newValue
         重新拼装成field=newValue返回
         """
-        logger = logging.getLogger("WindPy")
 
         # 参数健壮性处理
         if func is None or param is None:
-            logger.warning(
-                f"fieldValueReflect参数存在None值: func={func}, param={param}")
             return param
 
         # 如果param不是字符串类型，转换为字符串
@@ -643,7 +612,6 @@ class w:
 
         # 检查是否是key=value结构
         if '=' not in param:
-            logger.debug(f"参数不是key=value结构: {param}")
             return param
 
         try:
@@ -659,11 +627,9 @@ class w:
 
             # 重新拼装成field=newValue
             result = f"{field}={new_value}"
-            logger.debug(f"值映射结果: {param} -> {result}")
             return result
 
         except Exception as e:
-            logger.error(f"处理参数时发生错误: {str(e)}")
             return param
 
         # 参数健壮性处理
@@ -679,21 +645,15 @@ class w:
         返回:
             如果找到匹配项，返回映射后的值；否则返回原始值
         """
-        logger = logging.getLogger("WindPy")
 
         # 参数健壮性处理
         if func is None or field is None or oldValue is None:
-            logger.warning(
-                f"enumValueReflect参数存在None值: func={func}, field={field}, oldValue={oldValue}")
             return oldValue
 
         # 转换为大写以进行不区分大小写的比较
         func_upper = func.upper() if isinstance(func, str) else ""
         field_upper = field.upper() if isinstance(field, str) else ""
         old_value_str = str(oldValue).upper() if oldValue is not None else ""
-
-        logger.debug(
-            f"查找映射: func={func_upper}, field={field_upper}, oldValue={old_value_str}")
 
         # 在REFLECT数组中查找匹配项
         for item in REFLECT:
@@ -711,10 +671,8 @@ class w:
                 for value_pair in values:
                     if isinstance(value_pair, list) and len(value_pair) >= 2:
                         if str(value_pair[0]).upper() == old_value_str:
-                            logger.info(f"找到映射: {oldValue} -> {value_pair[1]}")
                             return value_pair[1]
 
-                logger.debug(f"未找到值映射: {oldValue}")
                 break
 
         # 如果没有找到匹配项，返回原始值
