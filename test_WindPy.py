@@ -1,9 +1,11 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from WindPy_p import w
+from WindPy import w
 import logging
 import os
 from dotenv import load_dotenv
+import pickle
+import json
 
 # 加载环境变量
 load_dotenv()
@@ -53,38 +55,41 @@ class TestWindPy(unittest.TestCase):
         self.assertEqual(result.ErrorCode, 0)
 
     @patch('requests.post')
-    def test_wss_args(self, mock_post):
+    def test_wss(self, mock_post):
         """测试正常参数调用"""
         # 配置mock响应
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            'ErrorCode': 0,
-            'Data': ['模拟的WSS数据']
-        }
+        mock_response.json.return_value = json.load(
+            open('test_data/test_wss_res.json'))
+
         mock_post.return_value = mock_response
 
         self.logger.info("开始测试 wss 正常参数调用")
         codes = ["000001.SZ", "000002.SZ"]
-        fields = "open,close,high"
-        result = w.wss(codes, fields, "priceAdj=F", "tradeDate=20231231",
-                       "cycle=D")
+        fields = "open,close,high,low"
+        result = w.wss(codes, fields, "tradeDate=20250228;priceAdj=U;cycle=D;")
 
         # 验证requests.post是否被正确调用
         mock_post.assert_called_once_with(
             f'{base_url}/sectormgmt/cloud/command',
             json={
-                'command': "WSS('000001.SZ,000002.SZ','open,close,high','priceAdj=F','tradeDate=20231231','cycle=D')",
+                'command': "WSS('000001.SZ,000002.SZ','open,close,high,low','tradeDate=20250228','priceAdj=1','cycle=1')",
                 "isSuccess": True,
                 "ip": "",
                 "uid": 4136117
             },
             timeout=(5, 10)
         )
+        with open('../orgtest/test_wss.pkl', 'rb') as f:
+            test_wss = pickle.load(f)
         self.assertEqual(result.ErrorCode, 0)
+        self.assertEqual(result.Codes, test_wss.Codes)
+        self.assertEqual(result.Fields, test_wss.Fields)
+        self.assertEqual(result.Data, test_wss.Data)
 
     @patch('requests.post')
-    def test_wsd_simple(self, mock_post):
+    def test_wsd(self, mock_post):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -92,12 +97,12 @@ class TestWindPy(unittest.TestCase):
             'Data': ['模拟的WSS数据']
         }
         mock_post.return_value = mock_response
-        w.wsd(["000001.SZ", "000002.SZ"], ["open", "close", 'high'],
-              '20250101', '20250201', "TradingCalendar=SSE", "PriceAdj=F", "rptType=1")
+        w.wsd(["000001.SZ"], ["open", "close"],
+              '20250101', '20250201', "TradingCalendar=SZSE", "PriceAdj=F", "rptType=1")
         mock_post.assert_called_once_with(
             f'{base_url}/sectormgmt/cloud/command',
             json={
-                "command": "WSD('000001.SZ,000002.SZ','open,close,high','20250101','20250201','TradingCalendar=SSE','PriceAdj=F','rptType=1')",
+                "command": "WSD('000001.SZ','open,close','20250101','20250201','TradingCalendar=SZSE','PriceAdj=3','rptType=1')",
                 "isSuccess": True,
                 "ip": "",
                 "uid": 4136117
@@ -173,6 +178,15 @@ class TestWindPy(unittest.TestCase):
             },
             timeout=(5, 10)
         )
+
+    @patch('requests.post')
+    def test_pickle(self, mock_post):
+        """从pickle文件读取测试数据并执行测试"""
+
+        # 读取pickle文件
+        with open('/Users/hongling/Dev/windagent/orgtest/test_wss.pkl', 'rb') as f:
+            test_wss = pickle.load(f)
+            print(test_wss)
 
 
 if __name__ == '__main__':

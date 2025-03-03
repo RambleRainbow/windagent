@@ -1,462 +1,747 @@
-# -*- coding: utf-8 -*-
-"""
-WindPy代理类
-用于模拟Wind Python接口的基础框架结构
-"""
-
-import pandas as pd
-import requests
+from datetime import datetime, date
 import os
+import logging
+import requests
+from dotenv import load_dotenv
+import pandas as pd
 
+# 加载环境变量
+load_dotenv()
 
-class WindProxyConfig:
-    """Wind代理配置类"""
+# 获取base_url，如果环境变量不存在则使用默认值
+base_url = os.getenv('BASEURL_CLOUD', 'http://10.0.0.1:1234')
 
-    def __init__(self):
-        # 从环境变量读取URL，如果不存在则使用默认值
-        self.base_url: str = os.getenv(
-            'URL_WINDPY_BRIDEG', "http://localhost:8800")
-        self.timeout: int = 30  # 默认超时时间(秒)
-        self.retry_count: int = 3  # 重试次数
-        self.retry_delay: int = 1  # 重试延迟(秒)
+# 配置日志
+logging.basicConfig(
+    filename='/Users/hongling/Dev/pytest/wind.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
-    def update(self, **kwargs):
-        """更新配置"""
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+logger = logging.getLogger("WindPy")
+logger.info(f"使用API基础URL: {base_url}")
 
-
-# 全局配置实例
-wind_config = WindProxyConfig()
-
-
-def initialize_wind_proxy(**kwargs):
-    """
-    初始化Wind代理配置
-
-    参数:
-        base_url: str - API服务地址
-        timeout: int - 请求超时时间(秒)
-        retry_count: int - 重试次数
-        retry_delay: int - 重试延迟(秒)
-    """
-    wind_config.update(**kwargs)
-
-    # 测试连接
-    try:
-        response = requests.get(
-            f"{wind_config.base_url}/health",
-            timeout=wind_config.timeout
-        )
-        response.raise_for_status()
-        print(f"Wind代理服务连接成功: {wind_config.base_url}")
-        return True
-    except Exception as e:
-        print(f"Wind代理服务连接失败: {str(e)}")
-        return False
-
-
-class WindData:
-    """
-    Wind数据结构类
-    用于封装API返回的数据
-    """
-
-    def __init__(self):
-        self.ErrorCode = 0
-        self.StateCode = 0
-        self.RequestID = 0
-        self.Codes = list()
-        self.Fields = list()
-        self.Times = list()
-        self.Data = list()
-        self.asDate = False
-        self.datatype = 0
-
-    def __str__(self):
-        return f"ErrorCode: {self.ErrorCode}"
+REFLECT = [
+    {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
+        ["W", "weekly"], ["D", "daily"]]},
+    {"func": "WSS", "field": "PRICEADJ", "values": [
+        ["U", "1"], ["F", "3"], ["B", "2"],
+        ["A", "4"], ["T", "4"]
+    ]},
+    {"func": "WSS", "field": "CYCLE", "values": [
+        ["W", "2"], ["M", "3"], ["Q", "4"],
+        ["S", "5"], ["Y", "6"], ["D", "1"]
+    ]},
+]
 
 
 class w:
-    """
-    Wind Python接口代理类
-    模拟Wind API的主要功能接口
-    """
+    """Wind Python接口代理类"""
+
+    class c_apiout:
+        """API输出数据结构"""
+
+        def __init__(self):
+            self.ErrorCode: int = 0
+            self.StateCode: int = 0
+            self.RequestID: int = 0
+            self.Codes: Any = None
+            self.Fields: Any = None
+            self.Times: Any = None
+            self.Data: Any = None
+
+        def __str__(self) -> str:
+            return f"ErrorCode: {self.ErrorCode}, RequestID: {self.RequestID}"
+
+        def __format__(self, fmt: str) -> str:
+            return str(self)
+
+        def __repr__(self) -> str:
+            return str(self)
+
+    class WindData:
+        """
+        用途：为了方便客户使用，本类用来把api返回来的C语言数据转换成python能认的数据，从而为用户后面转换成numpy提供方便
+             本类包含.ErrorCode 即命令错误代码，0表示正确；
+                  对于数据接口还有：  .Codes 命令返回的代码； .Fields命令返回的指标；.Times命令返回的时间；.Data命令返回的数据
+                  对于交易接口还有：  .Fields命令返回的指标；.Data命令返回的数据
+
+        """
+
+        def __init__(self):
+            self.ErrorCode = 0
+            self.StateCode = 0
+            self.RequestID = 0
+            self.Codes = list()  # list( string)
+            self.Fields = list()  # list( string)
+            self.Times = list()  # list( time)
+            self.Data = list()  # list( list1,list2,list3,list4)
+            self.asDate = False
+            self.datatype = 0  # 0-->DataAPI output, 1-->tradeAPI output
+            pass
+
+        def __del__(self):
+            pass
+
+        def __str__(self):
+            def str1D(v1d):
+                if (not (isinstance(v1d, list))):
+                    return str(v1d)
+
+                outLen = len(v1d)
+                if (outLen == 0):
+                    return '[]'
+                outdot = 0
+                outx = ''
+                outr = '['
+                if outLen > 10:
+                    outLen = 10
+                    outdot = 1
+
+                for x in v1d[0:outLen]:
+                    try:
+                        outr = outr + outx + str(x)
+                        outx = ','
+                    except UnicodeEncodeError:
+                        outr = outr+outx+repr(x)
+                        outx = ','
+
+                if outdot > 0:
+                    outr = outr + outx + '...'
+                outr = outr + ']'
+                return outr
+
+            def str2D(v2d):
+                # v2d = str(v2d_in)
+                outLen = len(v2d)
+                if (outLen == 0):
+                    return '[]'
+                outdot = 0
+                outx = ''
+                outr = '['
+                if outLen > 10:
+                    outLen = 10
+                    outdot = 1
+
+                for x in v2d[0:outLen]:
+                    outr = outr + outx + str1D(x)
+                    outx = ','
+
+                if outdot > 0:
+                    outr = outr + outx + '...'
+                outr = outr + ']'
+                return outr
+
+            a = ".ErrorCode=%d" % self.ErrorCode
+            if (self.datatype == 0):
+                if (self.StateCode != 0):
+                    a = a + "\n.StateCode=%d" % self.StateCode
+                if (self.RequestID != 0):
+                    a = a + "\n.RequestID=%d" % self.RequestID
+                if (len(self.Codes) != 0):
+                    a = a+"\n.Codes="+str1D(self.Codes)
+                if (len(self.Fields) != 0):
+                    a = a+"\n.Fields="+str1D(self.Fields)
+                if (len(self.Times) != 0):
+                    if (self.asDate):
+                        a = a + "\n.Times=" + \
+                            str1D([format(x, '%Y%m%d') for x in self.Times])
+                    else:
+                        a = a + "\n.Times=" + \
+                            str1D([format(x, '%Y%m%d %H:%M:%S')
+                                  for x in self.Times])
+            else:
+                a = a+"\n.Fields="+str1D(self.Fields)
+
+            a = a+"\n.Data="+str2D(self.Data)
+            return a
+
+        def __format__(self, fmt):
+            return str(self)
+
+        def __repr__(self):
+            return str(self)
+
+        def clear(self):
+            self.ErrorCode = 0
+            self.StateCode = 0
+            self.RequestID = 0
+            self.Codes = list()  # list( string)
+            self.Fields = list()  # list( string)
+            self.Times = list()  # list( time)
+            self.Data = list()  # list( list1,list2,list3,list4)
+
+        def setErrMsg(self, errid, msg):
+            self.clear()
+            self.ErrorCode = errid
+            self.Data = [msg]
+
+        def __getTotalCount(self, f):
+            if ((f.vt & VT_ARRAY == 0) or (f.parray == 0) or (f.parray[0].cDims == 0)):
+                return 0
+
+            totalCount = 1
+            for i in range(f.parray[0].cDims):
+                totalCount = totalCount * f.parray[0].rgsabound[i]
+            return totalCount
+
+        def __getColsCount(self, f, index=0):
+            if ((f.vt & VT_ARRAY == 0) or (f.parray == 0) or (index < f.parray[0].cDims)):
+                return 0
+
+            return f.parray[0].rgsabound[index]
+
+        def __getVarientValue(self, data):
+            ltype = data.vt
+            if ltype in [VT_I2]:
+                return data.iVal
+            if (ltype in [VT_I4]):
+                return data.lVal
+            if (ltype in [VT_I8]):
+                return data.llVal
+            if (ltype in [VT_I1]):
+                return data.bVal
+
+            if (ltype in [VT_R4]):
+                return data.fltVal
+
+            if (ltype in [VT_R8]):
+                return data.dblVal
+
+            if (ltype in [VT_DATE]):
+                return w.asDateTime(data.date)
+
+            if (ltype in [VT_BSTR]):
+                return data.bstrVal
+            if (ltype in [VT_CSTR]):
+                return w.setDecode(data.cstrVal)
+
+            return None
+
+        def __tolist(self, data, basei=0, diff=1):
+            """:
+            用来把dll中的codes,fields,times 转成list类型
+            data 为c_variant
+            """
+            totalCount = self.__getTotalCount(data)
+            if (totalCount == 0):  # or data.parray[0].cDims<1):
+                return list()
+
+            ltype = data.vt & ~VT_ARRAY
+            if ltype in [VT_I2]:
+                return data.parray[0].piVal[basei:totalCount:diff]
+            if (ltype in [VT_I4]):
+                return data.parray[0].plVal[basei:totalCount:diff]
+            if (ltype in [VT_I8]):
+                return data.parray[0].pllVal[basei:totalCount:diff]
+            if (ltype in [VT_I1]):
+                return data.parray[0].pbVal[basei:totalCount:diff]
+
+            if (ltype in [VT_R4]):
+                return data.parray[0].pfltVal[basei:totalCount:diff]
+
+            if (ltype in [VT_R8]):
+                return data.parray[0].pdblVal[basei:totalCount:diff]
+
+            if (ltype in [VT_DATE]):
+                return [w.asDateTime(x, self.asDate) for x in data.parray[0].pdate[basei:totalCount:diff]]
+
+            if (ltype in [VT_BSTR]):
+                return data.parray[0].pbstrVal[basei:totalCount:diff]
+
+            if (ltype in [VT_CSTR]):
+                return [w.setDecode(x) for x in data.parray[0].pcstrVal[basei:totalCount:diff]]
+                ret = list()
+                for indx in range(basei, totalCount):
+                    ret.append(w.setDecode(data.parray[0].pcstrVal[indx]))
+                return ret
+
+                return data.parray[0].pcstrVal[basei:totalCount:diff]
+
+            if (ltype in [VT_VARIANT]):
+                return [self.__getVarientValue(x) for x in data.parray[0].pvarVal[basei:totalCount:diff]]
+
+            return list()
+
+        # bywhich=0 default,1 code, 2 field, 3 time
+        # indata: POINTER(c_apiout)
+        def set(self, indata, bywhich=0, asdate=None, datatype=None):
+            self.clear()
+            if (indata == 0):
+                self.ErrorCode = 1
+                return
+
+            if (asdate == True):
+                self.asDate = True
+            if (datatype == None):
+                datatype = 0
+            if (datatype <= 2):
+                self.datatype = datatype
+
+            self.ErrorCode = indata[0].ErrorCode
+            self.Fields = self.__tolist(indata[0].Fields)
+            self.StateCode = indata[0].StateCode
+            self.RequestID = indata[0].RequestID
+            self.Codes = self.__tolist(indata[0].Codes)
+            self.Times = self.__tolist(indata[0].Times)
+            # if(self.datatype==0):# for data api output
+            if (1 == 1):
+                codeL = len(self.Codes)
+                fieldL = len(self.Fields)
+                timeL = len(self.Times)
+                datalen = self.__getTotalCount(indata[0].Data)
+                minlen = min(codeL, fieldL, timeL)
+
+                if (datatype == 2):
+                    self.Data = self.__tolist(indata[0].Data)
+                    return
+
+#                 if( datalen != codeL*fieldL*timeL or minlen==0 ):
+#                     return
+
+                if (minlen != 1):
+                    self.Data = self.__tolist(indata[0].Data)
+                    return
+
+                if (bywhich > 3):
+                    bywhich = 0
+
+                if (codeL == 1 and not (bywhich == 2 and fieldL == 1) and not (bywhich == 3 and timeL == 1)):
+                    # row=time col=field
+                    self.Data = [self.__tolist(
+                        indata[0].Data, i, fieldL) for i in range(fieldL)]
+                    return
+                if (timeL == 1 and not (bywhich == 2 and fieldL == 1)):
+                    self.Data = [self.__tolist(
+                        indata[0].Data, i, fieldL) for i in range(fieldL)]
+                    return
+
+                if (fieldL == 1):
+                    self.Data = [self.__tolist(
+                        indata[0].Data, i, codeL) for i in range(codeL)]
+                    return
+
+                self.Data = self.__tolist(indata[0].Data)
+
+            return
+
     @staticmethod
-    def start(options=None, waitTime=120, *arga, **argb):
-        """启动WindPy"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-        outdata.Codes = []
-        outdata.Fields = []
-        outdata.Times = []
-        outdata.Data = ["OK!"]  # 模拟成功连接的返回消息
+    def start(options=None, waitTime=120, *arga, **argb) -> WindData:
+        """启动Wind接口"""
+        # 配置日志
+        logger = logging.getLogger("WindPy")
+        logger.info("启动Wind接口")
 
-        print("Welcome to use Wind Quant API for Python (WindPy)!")
-        print("")
-        print("COPYRIGHT (C) 2021 WIND INFORMATION CO., LTD. ALL RIGHTS RESERVED.")
-        print("IN NO CIRCUMSTANCE SHALL WIND BE RESPONSIBLE FOR ANY DAMAGES OR LOSSES CAUSED BY USING WIND QUANT API FOR Python.")
+        # 记录启动参数
+        if options:
+            logger.debug(f"启动参数: {options}")
+        if waitTime != 120:
+            logger.debug(f"等待时间: {waitTime}")
 
-        return outdata
-
-    @staticmethod
-    def stop():
-        """停止WindPy"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-        outdata.Codes = []
-        outdata.Fields = []
-        outdata.Times = []
-        outdata.Data = ["OK!"]  # 模拟成功断开连接的返回消息
-        return outdata
+        # 记录启动结果
+        result = w.WindData()
+        logger.info("Wind接口启动完成")
+        return result
 
     @staticmethod
-    def close():
-        """关闭WindPy"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-        outdata.Codes = []
-        outdata.Fields = []
-        outdata.Times = []
-        outdata.Data = ["OK!"]  # 模拟成功断开连接的返回消息
-        return outdata
+    def stop() -> WindData:
+        """停止Wind接口"""
+        return w.WindData()
 
     @staticmethod
-    def isconnected():
+    def close() -> WindData:
+        """关闭Wind接口"""
+        return w.WindData()
+
+    @staticmethod
+    def isconnected() -> bool:
         """检查连接状态"""
         return True
 
     @staticmethod
-    def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb):
-        """获取日期序列数据"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-
-        # 处理输入参数
-        if isinstance(codes, str):
-            outdata.Codes = [code.strip() for code in codes.split(',')]
-        else:
-            outdata.Codes = codes
-
-        if isinstance(fields, str):
-            outdata.Fields = [field.strip() for field in fields.split(',')]
-        else:
-            outdata.Fields = fields
-
-        # 构建请求参数
-        params = {
-            'codes': ','.join(outdata.Codes),
-            'fields': ','.join(outdata.Fields),
-            'start_date': beginTime,
-            'end_date': endTime
-        }
-        if options:
-            params['options'] = options
-
-        try:
-            # 发送请求到wind_bridge服务
-            response = requests.post(
-                f"{wind_config.base_url}/wsd",
-                json=params,
-                timeout=wind_config.timeout
-            )
-            response.raise_for_status()
-
-            # 解析返回的JSON数据
-            result = response.json()
-
-            # 更新WindData对象
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])
-
-        except requests.exceptions.RequestException as e:
-            # 请求失败时设置错误代码
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
-
-        return outdata
-
-    @staticmethod
-    def wss(codes, fields, options=None, *arga, **argb):
-        """获取快照数据"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-
-        # 处理输入参数
-        if isinstance(codes, str):
-            # 分割字符串并去除每个元素的首尾空格
-            outdata.Codes = [code.strip() for code in codes.split(',')]
-        else:
-            outdata.Codes = codes
-
-        if isinstance(fields, str):
-            # 分割字符串并去除每个元素的首尾空格
-            outdata.Fields = [field.strip() for field in fields.split(',')]
-        else:
-            outdata.Fields = fields
-
-        # 调用wind_bridge的wss接口获取数据
-
-        # 构建请求参数
-        params = {
-            'codes': ','.join(outdata.Codes),
-            'fields': ','.join(outdata.Fields)
-        }
-        if options:
-            params['options'] = options
-
-        try:
-            # 发送请求到wind_bridge服务
-            # 设置默认的API基础URL和超时时间
-            BASE_URL = "http://localhost:5000"  # 默认API地址
-            TIMEOUT = 30  # 默认30秒超时
-
-            response = requests.post(
-                f"{BASE_URL}/wss",
-                json=params,
-                timeout=TIMEOUT
-            )
-            response.raise_for_status()
-
-            # 解析返回的JSON数据
-            result = response.json()
-
-            # 更新WindData对象
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])  # 添加当前时间作为数据时间戳
-
-        except requests.exceptions.RequestException as e:
-            # 请求失败时设置错误代码
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
-
-        return outdata
-
-    @staticmethod
-    def wsq(codes, fields, options=None, func=None, *arga, **argb):
-        """获取实时行情"""
-        return WindData()
-
-    @staticmethod
-    def wst(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb):
-        """获取日内跳价数据"""
-        return WindData()
-
-    @staticmethod
-    def wsi(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb):
-        """获取分钟序列数据"""
-        return WindData()
+    def setLanguage(lang: str) -> None:
+        """设置语言"""
+        pass
 
     @staticmethod
     def wset(tablename, options=None, *arga, **argb):
-        """获取数据集"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
+        """wset获取数据集"""
+        logger = logging.getLogger("WindPy")
+        logger.info(f"调用 wset 函数: tablename={tablename}")
+        logger.debug(f"原始参数: options={options}, arga={arga}, argb={argb}")
 
-        # 构建请求参数
-        params = {
-            'report_name': tablename,
-            'options': options if options else ""
-        }
+        tablename = w.__dargArr2str(tablename)
+        logger.debug(f"转换后的表名: tablename={tablename}")
 
-        try:
-            # 发送请求到wind_bridge服务
-            response = requests.post(
-                f"{wind_config.base_url}/wset",
-                json=params,
-                timeout=wind_config.timeout
-            )
-            response.raise_for_status()
+        options = w.__t2options(options, arga, argb)
+        logger.debug(f"转换后的选项: options={options}")
 
-            # 解析返回的JSON数据
-            result = response.json()
+        if (tablename == None or options == None):
+            logger.error("无效参数: tablename或options为None")
+            print('Invalid arguments!')
+            return
 
-            # 更新WindData对象
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])
+        logger.info(f"创建WindData对象并返回结果")
+        out = w.WindData()
+        return out
 
-        except requests.exceptions.RequestException as e:
-            # 请求失败时设置错误代码
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
-
-        return outdata
-
-    @staticmethod
-    def edb(codes, beginTime=None, endTime=None, options=None, *arga, **argb):
-        """获取经济数据"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-
-        # 处理输入参数
-        if isinstance(codes, str):
-            outdata.Codes = [code.strip() for code in codes.split(',')]
+    def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb) -> WindData:
+        """获取日期序列数据"""
+        all_params = []
+        if codes is not None:
+            codes_str = ','.join(w.unnamedParams2StrArr(codes))
         else:
-            outdata.Codes = codes
+            codes_str = ''
+        all_params.append(codes_str)
 
-        # 构建请求参数
-        params = {
-            'codes': ','.join(outdata.Codes),
-            'start_date': beginTime,
-            'end_date': endTime
-        }
-        if options:
-            params['options'] = options
+        if fields is not None:
+            fields_str = ','.join(w.unnamedParams2StrArr(fields))
+        else:
+            fields_str = ''
+        all_params.append(fields_str)
 
-        try:
-            # 发送请求到wind_bridge服务
-            response = requests.post(
-                f"{wind_config.base_url}/edb",
-                json=params,
-                timeout=wind_config.timeout
-            )
-            response.raise_for_status()
+        if beginTime is None:
+            beginTime = datetime.now().strftime('%Y%m%d')
+        all_params.append(beginTime)
 
-            # 解析返回的JSON数据
-            result = response.json()
+        if endTime is None:
+            endTime = datetime.now().striftime('%Y%m%d')
+        all_params.append(endTime)
 
-            # 更新WindData对象
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])
+        if options is not None:
+            options_list = w.unnamedParams2StrArr(options)
+            all_params.extend(options_list)
 
-        except requests.exceptions.RequestException as e:
-            # 请求失败时设置错误代码
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
+        arg_list = w.combineParams(arga, argb)
+        if arg_list:
+            all_params.extend(arg_list)
 
-        return outdata
-
-    @staticmethod
-    def tdays(beginTime=None, endTime=None, options=None, *arga, **argb):
-        """获取交易日序列"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
-
-        # 构建请求参数
-        params = {
-            'start_date': beginTime,
-            'end_date': endTime
-        }
-        if options:
-            params['options'] = options
-
-        try:
-            response = requests.post(
-                f"{wind_config.base_url}/tdays",
-                json=params,
-                timeout=wind_config.timeout
-            )
-            response.raise_for_status()
-            result = response.json()
-
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])
-        except requests.exceptions.RequestException as e:
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
-        return outdata
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command',
+                            json={
+                                'command': "WSD('" + "','".join(all_params) + "')",
+                                'isSuccess': True,
+                                'ip': '',
+                                'uid': 4136117
+                            },
+                            timeout=(5, 10)
+                            )
+        return w.WindData()
 
     @staticmethod
-    def tdayscount(beginTime=None, endTime=None, options=None, *arga, **argb):
-        """获取交易日天数"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
+    def wss(codes, fields, options=None, *arga, **argb):
+        """wss获取快照数据"""
 
-        params = {
-            'start_date': beginTime,
-            'end_date': endTime
-        }
-        if options:
-            params['options'] = options
+        # 将所有参数合并成一个数组
+        all_params = []
 
-        try:
-            response = requests.post(
-                f"{wind_config.base_url}/tdayscount",
-                json=params,
-                timeout=wind_config.timeout
-            )
-            response.raise_for_status()
-            result = response.json()
+        # 处理codes参数
+        if codes is not None:
+            codes_str = ','.join(w.unnamedParams2StrArr(codes))
+            if codes_str is not None:
+                all_params.append(codes_str)
 
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])
-        except requests.exceptions.RequestException as e:
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
-        return outdata
+        # 处理fields参数
+        if fields is not None:
+            fields_str = ','.join(w.unnamedParams2StrArr(fields))
+            if fields_str:
+                all_params.append(fields_str)
+
+        # 处理options参数
+        if options is not None:
+            if isinstance(options, str):
+                options = [opt for opt in options.split(';') if opt.strip()]
+            options_list = w.unnamedParams2StrArr(options)
+            if options_list:
+                all_params.extend(options_list)
+
+        # 处理位置参数和关键字参数
+        arga_argb_list = w.combineParams(arga, argb)
+        if arga_argb_list:
+            all_params.extend(arga_argb_list)
+
+        all_params = [w.fieldValueReflect(
+            'WSS', param) for param in all_params]
+
+        res = requests.post(
+            f'{base_url}/sectormgmt/cloud/command',
+            json={
+                'command': "WSS('" + "','".join(all_params) + "')",
+                'isSuccess': True,
+                'ip': '',
+                'uid': 4136117
+            },
+            timeout=(5, 10)
+        )
+
+        rtn = w.WindData()
+        rtn.Times.append(datetime.now())
+        rtn.Codes = codes_str.upper().split(',')
+        rtn.Fields = fields_str.upper().split(',')
+        rtn.Data = w.fillWindData(rtn.Codes, rtn.Fields, res.json()['data'])
+        return rtn
+
+    @staticmethod
+    def fillWindData(codes, fields, json_data):
+        """填充WindData对象"""
+        # 将json_data中的对象字段名转为大写
+        ud = []
+        for item in json_data:
+            upper_item = {}
+            for key, value in item.items():
+                upper_item[key.upper()] = value
+            ud.append(upper_item)
+        # 创建一个空的DataFrame对象
+        df = pd.DataFrame()
+
+        # 添加WINDCODE列
+        allFields = ['WINDCODE']
+        allFields.extend(fields)
+
+        # 添加fields中定义的列
+        for field in allFields:
+            field_data = []
+            for item in ud:
+                field_data.append(item.get(field, None))
+            df[field] = field_data
+
+        # 将DataFrame转换为列表格式返回
+        result = []
+        for field in fields:
+            result.append(df[field].tolist())
+
+        return result
+
+    @staticmethod
+    def unnamedParams2StrArr(arga):
+        """将所有未命名参数转换为字符串数组"""
+        result = []
+        if arga is not None:
+            # 确保arga是可迭代的
+            if not isinstance(arga, (list, tuple)):
+                arga = [arga]
+            for arg in arga:
+                if isinstance(arg, str):
+                    result.append(arg)
+                else:
+                    result.append(str(arg))
+        return result
+
+    @staticmethod
+    def namedParams2StrArr(argb):
+        """将所有命名参数转换为字符串数组"""
+        result = []
+        if argb is not None:
+            for key, value in argb.items():
+                if isinstance(value, str):
+                    result.append(key + '=' + value)
+                else:
+                    result.append(key + '=' + str(value))
+        return result
+
+    @staticmethod
+    def combineParams(arga, argb):
+        """将所有参数转换为字符串并合并到一个数组中"""
+        result = []
+        uarr = w.unnamedParams2StrArr(arga)
+        narr = w.namedParams2StrArr(argb)
+        if uarr is not None:
+            result.extend(uarr)
+        if narr is not None:
+            result.extend(narr)
+        return result
+
+    @staticmethod
+    def tdays(begin_time, end_time, options=None, *arga, **argb):
+        all_params = []
+        if end_time is None:
+            end_time = datetime.now().strftime('%Y-%m-%d')
+        if begin_time is None:
+            begin_time = end_time
+        if isinstance(begin_time, (datetime, date)):
+            begin_time = begin_time.strftime('%Y-%m-%d')
+        else:
+            begin_time = str(begin_time)
+        if isinstance(end_time, (datetime, date)):
+            end_time = end_time.strftime('%Y-%m-%d')
+        else:
+            end_time = str(end_time)
+        all_params.append(begin_time)
+        all_params.append(end_time)
+        if options is not None:
+            options_list = w.unnamedParams2StrArr(options)
+            if options_list:
+                all_params.extend(options_list)
+        arga_argb_list = w.combineParams(arga, argb)
+        all_params.extend(arga_argb_list)
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+            "command": "TDAYS('" + "','".join(all_params) + "')",
+            "isSuccess": True,
+            "ip": "",
+            "uid": 4136117
+        },
+            timeout=(5, 10))
+        return w.WindData()
 
     @staticmethod
     def tdaysoffset(offset, beginTime=None, options=None, *arga, **argb):
-        """获取偏移交易日"""
-        outdata = WindData()
-        outdata.ErrorCode = 0
-        outdata.StateCode = 0
-        outdata.RequestID = 0
+        if offset is None:
+            offset = -1
+        if beginTime is None:
+            beginTime = datetime.now().strftime('%Y-%m-%d')
+        else:
+            if isinstance(beginTime, (datetime, date)):
+                beginTime = beginTime.strftime('%Y-%m-%d')
+            else:
+                beginTime = str(beginTime)
 
-        params = {
-            'offset': offset,
-            'start_date': beginTime
-        }
-        if options:
-            params['options'] = options
+        if options is not None:
+            if isinstance(options, str):
+                options = options.split(';')
+            else:
+                options = w.unnamedParams2StrArr(options)
+        all_params = [beginTime, f'offset={offset}'] + options
+        arga_argb_list = w.combineParams(arga, argb)
+        all_params.extend(arga_argb_list)
 
-        try:
-            response = requests.post(
-                f"{wind_config.base_url}/tdaysoffset",
-                json=params,
-                timeout=wind_config.timeout
-            )
-            response.raise_for_status()
-            result = response.json()
+        # 对all_params中的每个元素进行映射转换
+        all_params = [w.fieldValueReflect(
+            'tdaysoffset', param) for param in all_params]
 
-            outdata.ErrorCode = 0
-            outdata.Codes = result.get('codes', [])
-            outdata.Fields = result.get('fields', [])
-            outdata.Data = result.get('data', [])
-            outdata.Times = result.get('times', [])
-        except requests.exceptions.RequestException as e:
-            outdata.ErrorCode = -1
-            outdata.Data = [f"请求失败: {str(e)}"]
-        return outdata
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+            "command": "TDAYSOFFSET('" + "','".join(all_params) + "')",
+            "isSuccess": True,
+            "ip": "",
+            "uid": 4136117
+        },
+            timeout=(5, 10))
+        return w.WindData()
 
     @staticmethod
-    def wsd2df(data):
-        """将WindData转换为DataFrame"""
-        return pd.DataFrame()
+    def fieldValueReflect(func, param):
+        """
+        判断param是key=value的结构才进行，否则不变
+        将param拆分成field和value两个字段，调用enumValueReflect进行映射,得到newValue
+        重新拼装成field=newValue返回
+        """
+        logger = logging.getLogger("WindPy")
+
+        # 参数健壮性处理
+        if func is None or param is None:
+            logger.warning(
+                f"fieldValueReflect参数存在None值: func={func}, param={param}")
+            return param
+
+        # 如果param不是字符串类型，转换为字符串
+        if not isinstance(param, str):
+            param = str(param)
+
+        # 检查是否是key=value结构
+        if '=' not in param:
+            logger.debug(f"参数不是key=value结构: {param}")
+            return param
+
+        try:
+            # 拆分field和value
+            field, value = param.split('=', 1)
+
+            # 去除首尾空格
+            field = field.strip()
+            value = value.strip()
+
+            # 调用enumValueReflect进行映射
+            new_value = w.enumValueReflect(func, field, value)
+
+            # 重新拼装成field=newValue
+            result = f"{field}={new_value}"
+            logger.debug(f"值映射结果: {param} -> {result}")
+            return result
+
+        except Exception as e:
+            logger.error(f"处理参数时发生错误: {str(e)}")
+            return param
+
+        # 参数健壮性处理
+
+    @staticmethod
+    def enumValueReflect(func, field, oldValue):
+        """
+        在REFLECT数组中查找匹配的func和field，并返回对应的值
+        参数:
+            func: 函数名
+            field: 字段名
+            oldValue: 原始值
+        返回:
+            如果找到匹配项，返回映射后的值；否则返回原始值
+        """
+        logger = logging.getLogger("WindPy")
+
+        # 参数健壮性处理
+        if func is None or field is None or oldValue is None:
+            logger.warning(
+                f"enumValueReflect参数存在None值: func={func}, field={field}, oldValue={oldValue}")
+            return oldValue
+
+        # 转换为大写以进行不区分大小写的比较
+        func_upper = func.upper() if isinstance(func, str) else ""
+        field_upper = field.upper() if isinstance(field, str) else ""
+        old_value_str = str(oldValue).upper() if oldValue is not None else ""
+
+        logger.debug(
+            f"查找映射: func={func_upper}, field={field_upper}, oldValue={old_value_str}")
+
+        # 在REFLECT数组中查找匹配项
+        for item in REFLECT:
+            if not isinstance(item, dict):
+                continue
+
+            item_func = item.get("func", "").upper()
+            item_field = item.get("field", "").upper()
+
+            # 检查func和field是否匹配
+            if item_func == func_upper and item_field == field_upper:
+                values = item.get("values", [])
+
+                # 在values中查找匹配的oldValue
+                for value_pair in values:
+                    if isinstance(value_pair, list) and len(value_pair) >= 2:
+                        if str(value_pair[0]).upper() == old_value_str:
+                            logger.info(f"找到映射: {oldValue} -> {value_pair[1]}")
+                            return value_pair[1]
+
+                logger.debug(f"未找到值映射: {oldValue}")
+                break
+
+        # 如果没有找到匹配项，返回原始值
+        return oldValue
+
+    @staticmethod
+    def tdayscount(beginTime, endTime, options=None, *arga, **argb):
+        all_params = []
+        if beginTime is None:
+            beginTime = datetime.now().strftime('%Y-%m-%d')
+        else:
+            if isinstance(beginTime, (datetime, date)):
+                beginTime = beginTime.strftime('%Y-%m-%d')
+            else:
+                beginTime = str(beginTime)
+        if endTime is None:
+            endTime = beginTime
+        else:
+            if isinstance(endTime, (datetime, date)):
+                endTime = endTime.strftime('%Y-%m-%d')
+            else:
+                endTime = str(endTime)
+        all_params.extend([beginTime, endTime])
+        all_params.extend(w.unnamedParams2StrArr(options))
+        all_params.extend(w.unnamedParams2StrArr(arga))
+        all_params.extend(w.namedParams2StrArr(argb))
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+            "command": f"TDAYSCOUNT('" + "','".join(all_params) + "')",
+            "isSuccess": True,
+            "ip": "",
+            "uid": 4136117
+        }, timeout=(5, 10))
+        return w.WindData()
