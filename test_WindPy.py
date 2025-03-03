@@ -120,24 +120,27 @@ class TestWindPy(unittest.TestCase):
     def test_tdays(self, mock_post):
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            'ErrorCode': 0,
-            'Data': ['模拟的WSS数据']
-        }
+        mock_response.json.return_value = json.load(open(
+            'test_data/test_tdays_res.json'))
         mock_post.return_value = mock_response
-        w.tdays("2025-02-02", "2025-03-02", "Period=W",
-                "TradingCalendar=SZSE")
+        rtn = w.tdays("2025-01-01", "2025-02-01", "Period=D",
+                      "TradingCalendar=SZSE")
 
         mock_post.assert_called_once_with(
             f'{base_url}/sectormgmt/cloud/command',
             json={
-                "command": "TDAYS('2025-02-02','2025-03-02','Period=W','TradingCalendar=SZSE')",
+                "command": "TDAYS('2025-01-01','2025-02-01','Period=D','TradingCalendar=SZSE')",
                 "isSuccess": True,
                 "ip": "",
                 "uid": 4136117
             },
             timeout=(5, 10)
         )
+        with open('../orgtest/test_tdays.pkl', 'rb') as f:
+            test_tdays = pickle.load(f)
+        self.assertEqual(rtn.ErrorCode, 0)
+        self.assertEqual(rtn.Times, test_tdays.Times)
+        self.assertEqual(rtn.Data, test_tdays.Data)
 
     @patch('requests.post')
     def test_tdaysoffset(self, mock_post):

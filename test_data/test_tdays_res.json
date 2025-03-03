@@ -1,0 +1,49 @@
+{
+  "result": true,
+  "errorCode": 0,
+  "errorMessage": "",
+  "data": {
+    "responseBytes": "AQAAABIAAAAKD1uyXLJfsmCyYbJismOyZrJnsmiyabJqsm2ybrJvsnCycbJ0sg==",
+    "success": true,
+    "commandHeader": {
+      "size": 46,
+      "plain": false,
+      "success": true,
+      "format": 1,
+      "compressed": false,
+      "version": 1
+    },
+    "format": 1,
+    "report": {
+      "recCount": 18,
+      "hasPrivilegeInfos": false,
+      "reportColumns": [
+        {
+          "dataType": "CHAR8DATE",
+          "values": [
+            45659, 45660, 45663, 45664, 45665, 45666, 45667, 45670, 45671,
+            45672, 45673, 45674, 45677, 45678, 45679, 45680, 45681, 45684
+          ]
+        }
+      ],
+      "columnNames": [],
+      "reportHeader": {
+        "recCount": 18,
+        "reportVersion": 1,
+        "hasPrivilegeInfos": false,
+        "reserve4": 0,
+        "reserve1": 0,
+        "reserve3": 0,
+        "columnCount": 0,
+        "reserve2": 0,
+        "totalCount": 0
+      },
+      "columnCount": 0,
+      "totalCount": 0,
+      "version": 1
+    },
+    "compressed": false,
+    "outputEncode": "GBK",
+    "rawBytes": "AQABAAEALgAAAAEAAAASAAAACg9bslyyX7JgsmGyYrJjsmayZ7JosmmyarJtsm6yb7JwsnGydLI="
+  }
+}

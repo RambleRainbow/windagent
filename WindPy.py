@@ -568,7 +568,18 @@ class w:
             "uid": 4136117
         },
             timeout=(5, 10))
-        return w.WindData()
+        rtn = w.WindData()
+        rtn.Times = [w.fromChar8Date(days) for days in res.json()[
+            'data']['report']['reportColumns'][0]['values']]
+        rtn.Data = [[datetime(time.year, time.month, time.day)
+                     for time in rtn.Times]]
+        return rtn
+
+    @staticmethod
+    def fromChar8Date(days):
+        """将Char8Date转换为datetime对象"""
+        start_time = date(1899, 12, 30)
+        return start_time + timedelta(days=days)
 
     @staticmethod
     def tdaysoffset(offset, beginTime=None, options=None, *arga, **argb):
