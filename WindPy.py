@@ -47,27 +47,6 @@ REFLECT = [
 class w:
     """Wind Python接口代理类"""
 
-    class c_apiout:
-        """API输出数据结构"""
-
-        def __init__(self):
-            self.ErrorCode: int = 0
-            self.StateCode: int = 0
-            self.RequestID: int = 0
-            self.Codes: Any = None
-            self.Fields: Any = None
-            self.Times: Any = None
-            self.Data: Any = None
-
-        def __str__(self) -> str:
-            return f"ErrorCode: {self.ErrorCode}, RequestID: {self.RequestID}"
-
-        def __format__(self, fmt: str) -> str:
-            return str(self)
-
-        def __repr__(self) -> str:
-            return str(self)
-
     class WindData:
         """
         用途：为了方便客户使用，本类用来把api返回来的C语言数据转换成python能认的数据，从而为用户后面转换成numpy提供方便
