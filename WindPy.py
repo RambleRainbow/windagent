@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 import logging
 import requests
@@ -25,6 +25,14 @@ logger.info(f"使用API基础URL: {base_url}")
 REFLECT = [
     {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
         ["W", "weekly"], ["D", "daily"]]},
+    {"func": "WSD", "field": "PRICEADJ", "values": [
+        ["U", "1"], ["F", "3"], ["B", "2"],
+        ["A", "4"], ["T", "4"]
+    ]},
+    {"func": "WSD", "field": "CYCLE", "values": [
+        ["W", "2"], ["M", "3"], ["Q", "4"],
+        ["S", "5"], ["Y", "6"], ["D", "1"]
+    ]},
     {"func": "WSS", "field": "PRICEADJ", "values": [
         ["U", "1"], ["F", "3"], ["B", "2"],
         ["A", "4"], ["T", "4"]
@@ -329,19 +337,8 @@ class w:
     @staticmethod
     def start(options=None, waitTime=120, *arga, **argb) -> WindData:
         """启动Wind接口"""
-        # 配置日志
-        logger = logging.getLogger("WindPy")
-        logger.info("启动Wind接口")
-
-        # 记录启动参数
-        if options:
-            logger.debug(f"启动参数: {options}")
-        if waitTime != 120:
-            logger.debug(f"等待时间: {waitTime}")
-
         # 记录启动结果
         result = w.WindData()
-        logger.info("Wind接口启动完成")
         return result
 
     @staticmethod
@@ -417,6 +414,8 @@ class w:
         if arg_list:
             all_params.extend(arg_list)
 
+        all_params = [w.fieldValueReflect('WSD', param)
+                      for param in all_params]
         res = requests.post(f'{base_url}/sectormgmt/cloud/command',
                             json={
                                 'command': "WSD('" + "','".join(all_params) + "')",
@@ -426,7 +425,15 @@ class w:
                             },
                             timeout=(5, 10)
                             )
-        return w.WindData()
+
+        rtn = w.WindData()
+        rtn.Codes = codes_str.upper().split(',')
+        rtn.Fields = fields_str.upper().split(',')
+        start_time = date(1899, 12, 30)
+        rtn.Times = [start_time +
+                     timedelta(days=t['time']) for t in res.json()['data']]
+        rtn.Data = w.fillWindData(rtn.Codes, rtn.Fields, res.json()['data'])
+        return rtn
 
     @staticmethod
     def wss(codes, fields, options=None, *arga, **argb):

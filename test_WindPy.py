@@ -92,13 +92,11 @@ class TestWindPy(unittest.TestCase):
     def test_wsd(self, mock_post):
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            'ErrorCode': 0,
-            'Data': ['模拟的WSS数据']
-        }
+        mock_response.json.return_value = json.load(
+            open('test_data/test_wsd_res.json'))
         mock_post.return_value = mock_response
-        w.wsd(["000001.SZ"], ["open", "close"],
-              '20250101', '20250201', "TradingCalendar=SZSE", "PriceAdj=F", "rptType=1")
+        rtn = w.wsd(["000001.SZ"], ["open", "close"],
+                    '20250101', '20250201', "TradingCalendar=SZSE", "PriceAdj=F", "rptType=1")
         mock_post.assert_called_once_with(
             f'{base_url}/sectormgmt/cloud/command',
             json={
@@ -109,6 +107,14 @@ class TestWindPy(unittest.TestCase):
             },
             timeout=(5, 10)
         )
+
+        with open('../orgtest/test_wsd.pkl', 'rb') as f:
+            test_wsd = pickle.load(f)
+        self.assertEqual(rtn.ErrorCode, 0)
+        self.assertEqual(rtn.Codes, test_wsd.Codes)
+        self.assertEqual(rtn.Fields, test_wsd.Fields)
+        self.assertEqual(rtn.Times, test_wsd.Times)
+        self.assertEqual(rtn.Data, test_wsd.Data)
 
     @patch('requests.post')
     def test_tdays(self, mock_post):
@@ -184,9 +190,9 @@ class TestWindPy(unittest.TestCase):
         """从pickle文件读取测试数据并执行测试"""
 
         # 读取pickle文件
-        with open('/Users/hongling/Dev/windagent/orgtest/test_wss.pkl', 'rb') as f:
-            test_wss = pickle.load(f)
-            print(test_wss)
+        with open('/Users/hongling/Dev/windagent/orgtest/test_wsd.pkl', 'rb') as f:
+            test_value = pickle.load(f)
+            print(test_value)
 
 
 if __name__ == '__main__':
