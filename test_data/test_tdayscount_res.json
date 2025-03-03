@@ -1,0 +1,41 @@
+{
+  "result": true,
+  "errorCode": 0,
+  "errorMessage": "",
+  "data": {
+    "responseBytes": "AQAAAAEAAAAJDwAAAAAAADJA",
+    "success": true,
+    "commandHeader": {
+      "size": 18,
+      "plain": false,
+      "success": true,
+      "format": 1,
+      "compressed": false,
+      "version": 1
+    },
+    "format": 1,
+    "report": {
+      "recCount": 1,
+      "hasPrivilegeInfos": false,
+      "reportColumns": [{ "dataType": "DOUBLE", "values": [18.0] }],
+      "columnNames": [],
+      "reportHeader": {
+        "recCount": 1,
+        "reportVersion": 1,
+        "hasPrivilegeInfos": false,
+        "reserve4": 0,
+        "reserve1": 0,
+        "reserve3": 0,
+        "columnCount": 0,
+        "reserve2": 0,
+        "totalCount": 0
+      },
+      "columnCount": 0,
+      "totalCount": 0,
+      "version": 1
+    },
+    "compressed": false,
+    "outputEncode": "GBK",
+    "rawBytes": "AQABAAEAEgAAAAEAAAABAAAACQ8AAAAAAAAyQA=="
+  }
+}

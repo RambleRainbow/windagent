@@ -743,9 +743,14 @@ class w:
         all_params.extend(w.namedParams2StrArr(argb))
 
         res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
-            "command": f"TDAYSCOUNT('" + "','".join(all_params) + "')",
+            "command": f"TDaysCount('" + "','".join(all_params) + "')",
             "isSuccess": True,
             "ip": "",
             "uid": 4136117
         }, timeout=(5, 10))
-        return w.WindData()
+
+        rtn = w.WindData()
+        rtn.Times = [date.today()]
+        rtn.Data = [
+            [res.json()['data']['report']['reportColumns'][0]['values'][0]]]
+        return rtn
