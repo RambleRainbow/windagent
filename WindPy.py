@@ -24,7 +24,7 @@ logger.info(f"使用API基础URL: {base_url}")
 
 REFLECT = [
     {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
-        ["W", "weekly"], ["D", "daily"]]},
+        ["W", "W"], ["D", "D"]]},
     {"func": "WSD", "field": "PRICEADJ", "values": [
         ["U", "1"], ["F", "3"], ["B", "2"],
         ["A", "4"], ["T", "4"]
@@ -598,22 +598,29 @@ class w:
                 options = options.split(';')
             else:
                 options = w.unnamedParams2StrArr(options)
-        all_params = [beginTime, f'offset={offset}'] + options
+        all_params = [beginTime] + options
         arga_argb_list = w.combineParams(arga, argb)
         all_params.extend(arga_argb_list)
+        all_params.append(f'Offset={offset}')
 
         # 对all_params中的每个元素进行映射转换
         all_params = [w.fieldValueReflect(
             'tdaysoffset', param) for param in all_params]
 
         res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
-            "command": "TDAYSOFFSET('" + "','".join(all_params) + "')",
+            "command": "TDaysOffset('" + "','".join(all_params) + "')",
             "isSuccess": True,
             "ip": "",
             "uid": 4136117
         },
             timeout=(5, 10))
-        return w.WindData()
+
+        rtn = w.WindData()
+        rtn.Times = [w.fromChar8Date(days) for days in res.json()[
+            'data']['report']['reportColumns'][0]['values']]
+        rtn.Data = [[datetime(time.year, time.month, time.day)
+                     for time in rtn.Times]]
+        return rtn
 
     @staticmethod
     def fieldValueReflect(func, param):
