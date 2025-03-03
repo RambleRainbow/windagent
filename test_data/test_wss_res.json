@@ -1,0 +1,21 @@
+{
+  "result": true,
+  "errorCode": 0,
+  "errorMessage": "",
+  "data": [
+    {
+      "high": 11.68,
+      "windCode": "000001.SZ",
+      "low": 11.5,
+      "close": 11.53,
+      "open": 11.58
+    },
+    {
+      "high": 8.03,
+      "windCode": "000002.SZ",
+      "low": 7.67,
+      "close": 7.75,
+      "open": 7.77
+    }
+  ]
+}
