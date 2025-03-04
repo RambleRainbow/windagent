@@ -219,7 +219,7 @@ class TestWindPy(unittest.TestCase):
 
     @patch('requests.post')
     def test_wset(self, mock_post):
-        mock_response = self.initMockResponse(
+        self.initMockResponse(
             mock_post, 'test_data/test_wset_res.json')
 
         result = w.wset(
