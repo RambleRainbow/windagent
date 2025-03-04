@@ -157,7 +157,7 @@ class w:
         return dateStr.replace('/', '-').replace('-', '')
 
     @staticmethod
-    def start(options=None, waitTime=120, *arga, **argb) -> WindData:
+    def start(options=None, waitTime=120, *args, **kwargs) -> WindData:
         """启动Wind接口"""
         # 记录启动结果
         result = w.WindData()
@@ -249,7 +249,7 @@ class w:
         return new_params
 
     @staticmethod
-    def wset(tablename, options=None, *arga, **argb):
+    def wset(tablename, options=None, *args, **kwargs):
         """wset获取数据集"""
         all_params = []
         if tablename.upper() != 'SECTORCONSTITUENT':
@@ -261,8 +261,8 @@ class w:
             options_list = w.unnamedParams2StrArr(options)
             if options_list:
                 all_params.extend(options_list)
-        all_params.extend(w.unnamedParams2StrArr(arga))
-        all_params.extend(w.namedParams2StrArr(argb))
+        all_params.extend(w.unnamedParams2StrArr(args))
+        all_params.extend(w.namedParams2StrArr(kwargs))
 
         try:
             all_params = w.processWsetParams(all_params)
@@ -306,7 +306,7 @@ class w:
         return rtn
 
     @staticmethod
-    def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb) -> WindData:
+    def wsd(codes, fields, beginTime=None, endTime=None, options=None, *args, **kwargs) -> WindData:
         """获取日期序列数据"""
         all_params = []
         if codes is not None:
@@ -333,7 +333,7 @@ class w:
             options_list = w.unnamedParams2StrArr(options)
             all_params.extend(options_list)
 
-        arg_list = w.combineParams(arga, argb)
+        arg_list = w.combineParams(args, kwargs)
         if arg_list:
             all_params.extend(arg_list)
 
@@ -359,7 +359,7 @@ class w:
         return rtn
 
     @staticmethod
-    def wss(codes, fields, options=None, *arga, **argb):
+    def wss(codes, fields, options=None, *args, **kwargs):
         """wss获取快照数据"""
 
         # 将所有参数合并成一个数组
@@ -386,9 +386,9 @@ class w:
                 all_params.extend(options_list)
 
         # 处理位置参数和关键字参数
-        arga_argb_list = w.combineParams(arga, argb)
-        if arga_argb_list:
-            all_params.extend(arga_argb_list)
+        args_kwargs_list = w.combineParams(args, kwargs)
+        if args_kwargs_list:
+            all_params.extend(args_kwargs_list)
 
         all_params = [w.fieldValueReflect(
             'WSS', param) for param in all_params]
@@ -443,14 +443,14 @@ class w:
         return result
 
     @staticmethod
-    def unnamedParams2StrArr(arga):
+    def unnamedParams2StrArr(args):
         """将所有未命名参数转换为字符串数组"""
         result = []
-        if arga is not None:
-            # 确保arga是可迭代的
-            if not isinstance(arga, (list, tuple)):
-                arga = [arga]
-            for arg in arga:
+        if args is not None:
+            # 确保args是可迭代的
+            if not isinstance(args, (list, tuple)):
+                args = [args]
+            for arg in args:
                 if isinstance(arg, str):
                     result.append(arg)
                 else:
@@ -458,11 +458,11 @@ class w:
         return result
 
     @staticmethod
-    def namedParams2StrArr(argb):
+    def namedParams2StrArr(kwargs):
         """将所有命名参数转换为字符串数组"""
         result = []
-        if argb is not None:
-            for key, value in argb.items():
+        if kwargs is not None:
+            for key, value in kwargs.items():
                 if isinstance(value, str):
                     result.append(key + '=' + value)
                 else:
@@ -470,11 +470,11 @@ class w:
         return result
 
     @staticmethod
-    def combineParams(arga, argb):
+    def combineParams(args, kwargs):
         """将所有参数转换为字符串并合并到一个数组中"""
         result = []
-        uarr = w.unnamedParams2StrArr(arga)
-        narr = w.namedParams2StrArr(argb)
+        uarr = w.unnamedParams2StrArr(args)
+        narr = w.namedParams2StrArr(kwargs)
         if uarr is not None:
             result.extend(uarr)
         if narr is not None:
@@ -482,7 +482,7 @@ class w:
         return result
 
     @staticmethod
-    def tdays(begin_time, end_time, options=None, *arga, **argb):
+    def tdays(begin_time, end_time, options=None, *args, **kwargs):
         all_params = []
         if end_time is None:
             end_time = datetime.now().strftime('%Y-%m-%d')
@@ -502,8 +502,8 @@ class w:
             options_list = w.unnamedParams2StrArr(options)
             if options_list:
                 all_params.extend(options_list)
-        arga_argb_list = w.combineParams(arga, argb)
-        all_params.extend(arga_argb_list)
+        args_kwargs_list = w.combineParams(args, kwargs)
+        all_params.extend(args_kwargs_list)
 
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
             "command": "TDAYS('" + "','".join(all_params) + "')",
@@ -526,7 +526,7 @@ class w:
         return start_time + timedelta(days=days)
 
     @staticmethod
-    def tdaysoffset(offset, beginTime=None, options=None, *arga, **argb):
+    def tdaysoffset(offset, beginTime=None, options=None, *args, **kwargs):
         if offset is None:
             offset = -1
         if beginTime is None:
@@ -543,8 +543,8 @@ class w:
             else:
                 options = w.unnamedParams2StrArr(options)
         all_params = [beginTime] + options
-        arga_argb_list = w.combineParams(arga, argb)
-        all_params.extend(arga_argb_list)
+        args_kwargs_list = w.combineParams(args, kwargs)
+        all_params.extend(args_kwargs_list)
         all_params.append(f'Offset={offset}')
 
         # 对all_params中的每个元素进行映射转换
@@ -651,7 +651,7 @@ class w:
         return oldValue
 
     @staticmethod
-    def tdayscount(beginTime, endTime, options=None, *arga, **argb):
+    def tdayscount(beginTime, endTime, options=None, *args, **kwargs):
         all_params = []
         if beginTime is None:
             beginTime = datetime.now().strftime('%Y-%m-%d')
@@ -669,8 +669,8 @@ class w:
                 endTime = str(endTime)
         all_params.extend([beginTime, endTime])
         all_params.extend(w.unnamedParams2StrArr(options))
-        all_params.extend(w.unnamedParams2StrArr(arga))
-        all_params.extend(w.namedParams2StrArr(argb))
+        all_params.extend(w.unnamedParams2StrArr(args))
+        all_params.extend(w.namedParams2StrArr(kwargs))
 
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
             "command": "TDaysCount('" + "','".join(all_params) + "')",
