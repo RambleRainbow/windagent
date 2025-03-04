@@ -10,38 +10,30 @@ load_dotenv()
 # 获取base_url，如果环境变量不存在则使用默认值
 base_url = os.getenv('BASEURL_CLOUD', 'http://10.0.0.1:1234')
 
-REFLECT = [
-    {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
-        ["W", "W"], ["D", "D"]]},
-    {"func": "WSD", "field": "PRICEADJ", "values": [
-        ["U", "1"], ["F", "3"], ["B", "2"],
-        ["A", "4"], ["T", "4"]
-    ]},
-    {"func": "WSD", "field": "CYCLE", "values": [
-        ["W", "2"], ["M", "3"], ["Q", "4"],
-        ["S", "5"], ["Y", "6"], ["D", "1"]
-    ]},
-    {"func": "WSS", "field": "PRICEADJ", "values": [
-        ["U", "1"], ["F", "3"], ["B", "2"],
-        ["A", "4"], ["T", "4"]
-    ]},
-    {"func": "WSS", "field": "CYCLE", "values": [
-        ["W", "2"], ["M", "3"], ["Q", "4"],
-        ["S", "5"], ["Y", "6"], ["D", "1"]
-    ]},
-]
-
-
-def toChar8Date(dateStr):
-    """将yyyy-mm-dd或yyyy/mm/dd格式的日期字符串转换为yyyymmdd格式"""
-    if not dateStr:
-        return dateStr
-    # 先将/替换为-，再将-去掉
-    return dateStr.replace('/', '-').replace('-', '')
-
 
 class w:
     """Wind Python接口代理类"""
+
+    REFLECT = [
+        {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
+            ["W", "W"], ["D", "D"]]},
+        {"func": "WSD", "field": "PRICEADJ", "values": [
+            ["U", "1"], ["F", "3"], ["B", "2"],
+            ["A", "4"], ["T", "4"]
+        ]},
+        {"func": "WSD", "field": "CYCLE", "values": [
+            ["W", "2"], ["M", "3"], ["Q", "4"],
+            ["S", "5"], ["Y", "6"], ["D", "1"]
+        ]},
+        {"func": "WSS", "field": "PRICEADJ", "values": [
+            ["U", "1"], ["F", "3"], ["B", "2"],
+            ["A", "4"], ["T", "4"]
+        ]},
+        {"func": "WSS", "field": "CYCLE", "values": [
+            ["W", "2"], ["M", "3"], ["Q", "4"],
+            ["S", "5"], ["Y", "6"], ["D", "1"]
+        ]},
+    ]
 
     class WindData:
         """
@@ -164,6 +156,14 @@ class w:
             raise NotImplementedError("此方法尚未实现")
 
     @staticmethod
+    def __toChar8Date(dateStr):
+        """将yyyy-mm-dd或yyyy/mm/dd格式的日期字符串转换为yyyymmdd格式"""
+        if not dateStr:
+            return dateStr
+        # 先将/替换为-，再将-去掉
+        return dateStr.replace('/', '-').replace('-', '')
+
+    @staticmethod
     def start(options=None, waitTime=120, *arga, **argb) -> WindData:
         """启动Wind接口"""
         # 记录启动结果
@@ -222,13 +222,13 @@ class w:
 
         # startdate
         if 'date' in result:
-            new_params.append(f'startdate={toChar8Date(result["date"])}')
+            new_params.append(f'startdate={w.__toChar8Date(result["date"])}')
         else:
             new_params.append(f'startdate={0}')
 
         # enddate
         if 'date' in result:
-            new_params.append(f'enddate={toChar8Date(result["date"])}')
+            new_params.append(f'enddate={w.__toChar8Date(result["date"])}')
         else:
             new_params.append(f'enddate={0}')
 
@@ -635,7 +635,7 @@ class w:
         old_value_str = str(oldValue).upper() if oldValue is not None else ""
 
         # 在REFLECT数组中查找匹配项
-        for item in REFLECT:
+        for item in w.REFLECT:
             if not isinstance(item, dict):
                 continue
 
