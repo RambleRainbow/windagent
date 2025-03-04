@@ -32,6 +32,14 @@ REFLECT = [
 ]
 
 
+def toChar8Date(dateStr):
+    """将yyyy-mm-dd或yyyy/mm/dd格式的日期字符串转换为yyyymmdd格式"""
+    if not dateStr:
+        return dateStr
+    # 先将/替换为-，再将-去掉
+    return dateStr.replace('/', '-').replace('-', '')
+
+
 class w:
     """Wind Python接口代理类"""
 
@@ -152,154 +160,8 @@ class w:
             self.ErrorCode = errid
             self.Data = [msg]
 
-        def __getTotalCount(self, f):
-            if ((f.vt & VT_ARRAY == 0) or (f.parray == 0) or (f.parray[0].cDims == 0)):
-                return 0
-
-            totalCount = 1
-            for i in range(f.parray[0].cDims):
-                totalCount = totalCount * f.parray[0].rgsabound[i]
-            return totalCount
-
-        def __getColsCount(self, f, index=0):
-            if ((f.vt & VT_ARRAY == 0) or (f.parray == 0) or (index < f.parray[0].cDims)):
-                return 0
-
-            return f.parray[0].rgsabound[index]
-
-        def __getVarientValue(self, data):
-            ltype = data.vt
-            if ltype in [VT_I2]:
-                return data.iVal
-            if (ltype in [VT_I4]):
-                return data.lVal
-            if (ltype in [VT_I8]):
-                return data.llVal
-            if (ltype in [VT_I1]):
-                return data.bVal
-
-            if (ltype in [VT_R4]):
-                return data.fltVal
-
-            if (ltype in [VT_R8]):
-                return data.dblVal
-
-            if (ltype in [VT_DATE]):
-                return w.asDateTime(data.date)
-
-            if (ltype in [VT_BSTR]):
-                return data.bstrVal
-            if (ltype in [VT_CSTR]):
-                return w.setDecode(data.cstrVal)
-
-            return None
-
-        def __tolist(self, data, basei=0, diff=1):
-            """:
-            用来把dll中的codes,fields,times 转成list类型
-            data 为c_variant
-            """
-            totalCount = self.__getTotalCount(data)
-            if (totalCount == 0):  # or data.parray[0].cDims<1):
-                return list()
-
-            ltype = data.vt & ~VT_ARRAY
-            if ltype in [VT_I2]:
-                return data.parray[0].piVal[basei:totalCount:diff]
-            if (ltype in [VT_I4]):
-                return data.parray[0].plVal[basei:totalCount:diff]
-            if (ltype in [VT_I8]):
-                return data.parray[0].pllVal[basei:totalCount:diff]
-            if (ltype in [VT_I1]):
-                return data.parray[0].pbVal[basei:totalCount:diff]
-
-            if (ltype in [VT_R4]):
-                return data.parray[0].pfltVal[basei:totalCount:diff]
-
-            if (ltype in [VT_R8]):
-                return data.parray[0].pdblVal[basei:totalCount:diff]
-
-            if (ltype in [VT_DATE]):
-                return [w.asDateTime(x, self.asDate) for x in data.parray[0].pdate[basei:totalCount:diff]]
-
-            if (ltype in [VT_BSTR]):
-                return data.parray[0].pbstrVal[basei:totalCount:diff]
-
-            if (ltype in [VT_CSTR]):
-                return [w.setDecode(x) for x in data.parray[0].pcstrVal[basei:totalCount:diff]]
-                ret = list()
-                for indx in range(basei, totalCount):
-                    ret.append(w.setDecode(data.parray[0].pcstrVal[indx]))
-                return ret
-
-                return data.parray[0].pcstrVal[basei:totalCount:diff]
-
-            if (ltype in [VT_VARIANT]):
-                return [self.__getVarientValue(x) for x in data.parray[0].pvarVal[basei:totalCount:diff]]
-
-            return list()
-
-        # bywhich=0 default,1 code, 2 field, 3 time
-        # indata: POINTER(c_apiout)
         def set(self, indata, bywhich=0, asdate=None, datatype=None):
-            self.clear()
-            if (indata == 0):
-                self.ErrorCode = 1
-                return
-
-            if (asdate == True):
-                self.asDate = True
-            if (datatype == None):
-                datatype = 0
-            if (datatype <= 2):
-                self.datatype = datatype
-
-            self.ErrorCode = indata[0].ErrorCode
-            self.Fields = self.__tolist(indata[0].Fields)
-            self.StateCode = indata[0].StateCode
-            self.RequestID = indata[0].RequestID
-            self.Codes = self.__tolist(indata[0].Codes)
-            self.Times = self.__tolist(indata[0].Times)
-            # if(self.datatype==0):# for data api output
-            if (1 == 1):
-                codeL = len(self.Codes)
-                fieldL = len(self.Fields)
-                timeL = len(self.Times)
-                datalen = self.__getTotalCount(indata[0].Data)
-                minlen = min(codeL, fieldL, timeL)
-
-                if (datatype == 2):
-                    self.Data = self.__tolist(indata[0].Data)
-                    return
-
-#                 if( datalen != codeL*fieldL*timeL or minlen==0 ):
-#                     return
-
-                if (minlen != 1):
-                    self.Data = self.__tolist(indata[0].Data)
-                    return
-
-                if (bywhich > 3):
-                    bywhich = 0
-
-                if (codeL == 1 and not (bywhich == 2 and fieldL == 1) and not (bywhich == 3 and timeL == 1)):
-                    # row=time col=field
-                    self.Data = [self.__tolist(
-                        indata[0].Data, i, fieldL) for i in range(fieldL)]
-                    return
-                if (timeL == 1 and not (bywhich == 2 and fieldL == 1)):
-                    self.Data = [self.__tolist(
-                        indata[0].Data, i, fieldL) for i in range(fieldL)]
-                    return
-
-                if (fieldL == 1):
-                    self.Data = [self.__tolist(
-                        indata[0].Data, i, codeL) for i in range(codeL)]
-                    return
-
-                self.Data = self.__tolist(indata[0].Data)
-
-            return
+            raise NotImplementedError("此方法尚未实现")
 
     @staticmethod
     def start(options=None, waitTime=120, *arga, **argb) -> WindData:
@@ -329,11 +191,128 @@ class w:
         pass
 
     @staticmethod
+    def processWsetParams(params):
+        """处理wset参数，将key=value结构的字符串转换为字典"""
+        result = {}
+        for param in params:
+            # 检查参数是否包含'='
+            if '=' not in param:
+                raise ValueError(f"参数格式错误: {param}, 需要key=value格式")
+
+            # 分割key和value
+            key, value = param.split('=', 1)
+            key = key.strip().lower()
+            value = value.strip()
+
+            # 检查key是否为空
+            if not key:
+                raise ValueError(f"参数key不能为空: {param}")
+
+            # 检查key是否重复
+            if key in result:
+                raise ValueError(f"参数key重复: {key}")
+
+            result[key] = value
+        new_params = []
+
+        if 'name' in result:
+            new_params.append(f'name={result["name"]}')
+        else:
+            new_params.append(f'name={"SectorConstituent22"}')
+
+        # startdate
+        if 'date' in result:
+            new_params.append(f'startdate={toChar8Date(result["date"])}')
+        else:
+            new_params.append(f'startdate={0}')
+
+        # enddate
+        if 'date' in result:
+            new_params.append(f'enddate={toChar8Date(result["date"])}')
+        else:
+            new_params.append(f'enddate={0}')
+
+        # group=1
+        groupAdded = False
+        if 'sectorid' in result:
+            new_params.append(f'sectorid={result["sectorid"]}')
+            groupAdded = True
+        else:
+            if 'windcode' in result:
+                new_params.append(f'windcode={result["windcode"]}')
+                groupAdded = True
+            else:
+                if 'sector' in result:
+                    new_params.append(f'sector={result["sector"]}')
+                    groupAdded = True
+        if (not groupAdded):
+            new_params.append('sectorid=a001010100000000')
+
+        if 'field' in result:
+            new_params.append(f'field={result["field"]}')
+        else:
+            new_params.append(f'field={"_date,_windCode,_secName"}')
+
+        return new_params
+
+    @staticmethod
     def wset(tablename, options=None, *arga, **argb):
         """wset获取数据集"""
-        out = w.WindData()
-        return out
+        all_params = []
+        if tablename.upper() != 'SECTORCONSTITUENT':
+            raise f'Unimplemented report table {tablename}'
+        all_params.append('name=WSET.SectorConstituent22')
+        if options is not None:
+            if isinstance(options, str):
+                options = ([opt.strip() for opt in options.split(';')])
+            options_list = w.unnamedParams2StrArr(options)
+            if options_list:
+                all_params.extend(options_list)
+        all_params.extend(w.unnamedParams2StrArr(arga))
+        all_params.extend(w.namedParams2StrArr(argb))
 
+        try:
+            all_params = w.processWsetParams(all_params)
+        except Exception as e:
+            raise ValueError('参数格式错误') from e
+
+        res = requests.post(f'{base_url}/sectormgmt/cloud/command',
+                            json={
+                                'command': "report " + " ".join(all_params),
+                                'isSuccess': True,
+                                'ip': '',
+                                'uid': 4136117
+                            },
+                            timeout=(5, 10)
+                            )
+
+        json_data = res.json()
+        rtn = w.WindData()
+        rtn.Fields = [param.split('=')[1]
+                      for param in all_params if param.startswith('field=')][0].split(',')
+        # 从响应中获取记录数量，并生成从1开始递增的字符串数组
+        rec_count = json_data['data']['report']['recCount']
+        rtn.Codes = [str(i+1) for i in range(rec_count)]
+        rtn.Times = [datetime.now()]
+
+        # 遍历 reportColumns 提取数据
+        report_columns = json_data['data']['report']['reportColumns']
+        data_columns = []
+        for column in report_columns:
+            if column.get('dataType') == 'CHAR8DATE':
+                # 对于日期类型数据，进行转换
+                data_columns.append([w.fromChar8Date(value, datetime)
+                                    for value in column['values']])
+            else:
+                # 其他类型数据直接添加
+                data_columns.append(column['values'])
+
+        # 转置数据以匹配 WindData 的格式要求
+        rtn.Data = data_columns
+
+        return rtn
+
+    @staticmethod
     def wsd(codes, fields, beginTime=None, endTime=None, options=None, *arga, **argb) -> WindData:
         """获取日期序列数据"""
         all_params = []
@@ -548,9 +527,9 @@ class w:
         return rtn
 
     @staticmethod
-    def fromChar8Date(days):
+    def fromChar8Date(days, dtype=date):
         """将Char8Date转换为datetime对象"""
-        start_time = date(1899, 12, 30)
+        start_time = dtype(1899, 12, 30)
         return start_time + timedelta(days=days)
 
     @staticmethod

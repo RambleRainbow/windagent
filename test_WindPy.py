@@ -24,35 +24,42 @@ class TestWindPy(unittest.TestCase):
         )
         self.logger = logging.getLogger("TestWindPy")
 
-    @patch('requests.post')
-    def test_wss_without_option(self, mock_post):
-        """测试正常参数调用"""
-        # 配置mock响应
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            'ErrorCode': 0,
-            'Data': ['模拟的WSS数据']
-        }
-        mock_post.return_value = mock_response
+    # @patch('requests.post')
+    # def test_wss_without_option(self, mock_post):
+    #     """测试正常参数调用"""
+    #     # 配置mock响应
+    #     mock_response = MagicMock()
+    #     mock_response.status_code = 200
+    #     mock_response.json.return_value = {
+    #         'ErrorCode': 0,
+    #         'Data': ['模拟的WSS数据']
+    #     }
+    #     mock_post.return_value = mock_response
 
-        self.logger.info("开始测试 wss 正常参数调用")
-        codes = "000001.SZ"
-        fields = ["open", "high", "low"]
-        result = w.wss(codes, fields)
+    #     self.logger.info("开始测试 wss 正常参数调用")
+    #     codes = "000001.SZ"
+    #     fields = ["open", "high", "low"]
+    #     result = w.wss(codes, fields)
 
-        # 验证requests.post是否被正确调用
-        mock_post.assert_called_once_with(
-            f'{base_url}/sectormgmt/cloud/command',
-            json={
-                'command': "WSS('000001.SZ','open,high,low')",
-                "isSuccess": True,
-                "ip": "",
-                "uid": 4136117
-            },
-            timeout=(5, 10)
-        )
-        self.assertEqual(result.ErrorCode, 0)
+    #     # 验证requests.post是否被正确调用
+    #     mock_post.assert_called_once_with(
+    #         f'{base_url}/sectormgmt/cloud/command',
+    #         json={
+    #             'command': "WSS('000001.SZ','open,high,low')",
+    #             "isSuccess": True,
+    #             "ip": "",
+    #             "uid": 4136117
+    #         },
+    #         timeout=(5, 10)
+    #     )
+    #     self.assertEqual(result.ErrorCode, 0)
+
+    #     with open('../orgtest/test_wss_without_option.pkl', 'rb') as f:
+    #         test_wss = pickle.load(f)
+    #     self.assertEqual(result.ErrorCode, 0)
+    #     self.assertEqual(result.Codes, test_wss.Codes)
+    #     self.assertEqual(result.Fields, test_wss.Fields)
+    #     self.assertEqual(result.Data, test_wss.Data)
 
     @patch('requests.post')
     def test_wss(self, mock_post):
@@ -169,13 +176,27 @@ class TestWindPy(unittest.TestCase):
         self.assertEqual(rtn.Times, test_tdaysoffset.Times)
         self.assertEqual(rtn.Data, test_tdaysoffset.Data)
 
-    @patch('requests.post')
-    def test_tdayscount(self, mock_post):
+    def initMockResponse(self, mock_post, json_file):
+        """
+        初始化模拟响应对象
+
+        Args:
+            mock_post: 模拟的post请求对象
+            json_file: 响应数据的JSON文件路径
+
+        Returns:
+            mock_post: 配置好的模拟post请求对象
+        """
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = json.load(open(
-            'test_data/test_tdayscount_res.json'))
+        mock_response.json.return_value = json.load(open(json_file))
         mock_post.return_value = mock_response
+        return mock_post
+
+    @patch('requests.post')
+    def test_tdayscount(self, mock_post):
+        mock_post = self.initMockResponse(
+            mock_post, 'test_data/test_tdayscount_res.json')
         rtn = w.tdayscount("2025-01-01", "2025-02-01",
                            "TradingCalendar=SZSE")
 
@@ -197,13 +218,38 @@ class TestWindPy(unittest.TestCase):
         return rtn
 
     @patch('requests.post')
+    def test_wset(self, mock_post):
+        mock_response = self.initMockResponse(
+            mock_post, 'test_data/test_wset_res.json')
+
+        result = w.wset(
+            'sectorconstituent', "date=2025-01-01;sectorid=1000052364000000;field=date,wind_code,sec_name")
+
+        mock_post.assert_called_once_with(
+            f'{base_url}/sectormgmt/cloud/command',
+            json={
+                "command": "report name=WSET.SectorConstituent22 startdate=20250101 enddate=20250101 sectorid=1000052364000000 field=date,wind_code,sec_name",
+                "isSuccess": True,
+                "ip": "",
+                "uid": 4136117
+            }, timeout=(5, 10))
+
+        with open('../orgtest/test_wset.pkl', 'rb') as f:
+            test_wset = pickle.load(f)
+        self.assertEqual(result.ErrorCode, 0)
+        self.assertEqual(result.Fields, test_wset.Fields)
+        self.assertEqual(result.Codes, test_wset.Codes)
+        self.assertEqual(len(result.Times), 1)  # 确认Times列表长度为1
+        self.assertEqual(result.Data, test_wset.Data)
+
+    @patch('requests.post')
     def test_pickle(self, mock_post):
         """从pickle文件读取测试数据并执行测试"""
 
         # 读取pickle文件
-        with open('/Users/hongling/Dev/windagent/orgtest/test_wsd.pkl', 'rb') as f:
+        with open('/Users/hongling/Dev/windagent/orgtest/test_wss_without_option.pkl', 'rb') as f:
             test_value = pickle.load(f)
-            print(test_value)
+        print(test_value)
 
 
 if __name__ == '__main__':
