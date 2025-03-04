@@ -23,6 +23,7 @@ class TestWindPy(unittest.TestCase):
             datefmt='%Y-%m-%d %H:%M:%S'
         )
         self.logger = logging.getLogger("TestWindPy")
+        w.base_url = base_url
 
     # @patch('requests.post')
     # def test_wss_without_option(self, mock_post):

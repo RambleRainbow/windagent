@@ -1,18 +1,11 @@
 from datetime import datetime, date, timedelta
-import os
 import requests
-from dotenv import load_dotenv
 import pandas as pd
-
-# 加载环境变量
-load_dotenv()
-
-# 获取base_url，如果环境变量不存在则使用默认值
-base_url = os.getenv('BASEURL_CLOUD', 'http://10.0.0.1:1234')
 
 
 class w:
     """Wind Python接口代理类"""
+    base_url = 'http://10.0.0.1:1234'
 
     REFLECT = [
         {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
@@ -276,7 +269,7 @@ class w:
         except Exception as e:
             raise ValueError('参数格式错误') from e
 
-        res = requests.post(f'{base_url}/sectormgmt/cloud/command',
+        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command',
                             json={
                                 'command': "report " + " ".join(all_params),
                                 'isSuccess': True,
@@ -346,7 +339,7 @@ class w:
 
         all_params = [w.fieldValueReflect('WSD', param)
                       for param in all_params]
-        res = requests.post(f'{base_url}/sectormgmt/cloud/command',
+        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command',
                             json={
                                 'command': "WSD('" + "','".join(all_params) + "')",
                                 'isSuccess': True,
@@ -401,7 +394,7 @@ class w:
             'WSS', param) for param in all_params]
 
         res = requests.post(
-            f'{base_url}/sectormgmt/cloud/command',
+            f'{w.base_url}/sectormgmt/cloud/command',
             json={
                 'command': "WSS('" + "','".join(all_params) + "')",
                 'isSuccess': True,
@@ -512,7 +505,7 @@ class w:
         arga_argb_list = w.combineParams(arga, argb)
         all_params.extend(arga_argb_list)
 
-        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
             "command": "TDAYS('" + "','".join(all_params) + "')",
             "isSuccess": True,
             "ip": "",
@@ -558,7 +551,7 @@ class w:
         all_params = [w.fieldValueReflect(
             'tdaysoffset', param) for param in all_params]
 
-        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
+        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
             "command": "TDaysOffset('" + "','".join(all_params) + "')",
             "isSuccess": True,
             "ip": "",
@@ -679,8 +672,8 @@ class w:
         all_params.extend(w.unnamedParams2StrArr(arga))
         all_params.extend(w.namedParams2StrArr(argb))
 
-        res = requests.post(f'{base_url}/sectormgmt/cloud/command', json={
-            "command": f"TDaysCount('" + "','".join(all_params) + "')",
+        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
+            "command": "TDaysCount('" + "','".join(all_params) + "')",
             "isSuccess": True,
             "ip": "",
             "uid": 4136117
