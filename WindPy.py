@@ -1,6 +1,5 @@
 from datetime import datetime, date, timedelta
 import requests
-import pandas as pd
 
 
 class w:
@@ -421,24 +420,16 @@ class w:
             for key, value in item.items():
                 upper_item[key.upper()] = value
             ud.append(upper_item)
-        # 创建一个空的DataFrame对象
-        df = pd.DataFrame()
 
-        # 添加WINDCODE列
-        allFields = ['WINDCODE']
-        allFields.extend(fields)
-
-        # 添加fields中定义的列
-        for field in allFields:
+        # 创建结果列表
+        result = []
+        # 对每个字段创建一个列表
+        for field in fields:
             field_data = []
+            # 从每个数据项中提取对应字段的值
             for item in ud:
                 field_data.append(item.get(field, None))
-            df[field] = field_data
-
-        # 将DataFrame转换为列表格式返回
-        result = []
-        for field in fields:
-            result.append(df[field].tolist())
+            result.append(field_data)
 
         return result
 
