@@ -1,11 +1,19 @@
-import unittest
-from unittest.mock import patch, MagicMock
-from WindPy import w
-import logging
-import os
-from dotenv import load_dotenv
-import pickle
 import json
+import pickle
+from dotenv import load_dotenv
+import logging
+from unittest.mock import patch, MagicMock
+import unittest
+import sys
+import os
+
+package_dir = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '../src'))
+# 将该路径添加到 sys.path 中
+# 将包路径添加到sys.path的最前面
+sys.path.insert(0, package_dir)
+
+from WindPy import w  # noqa: E402 修改包的目录，以引入WindPy.py文件
 
 # 加载环境变量
 load_dotenv()
@@ -55,7 +63,7 @@ class TestWindPy(unittest.TestCase):
     #     )
     #     self.assertEqual(result.ErrorCode, 0)
 
-    #     with open('../orgtest/test_wss_without_option.pkl', 'rb') as f:
+    #     with open('test_data/test_wss_without_option.pkl', 'rb') as f:
     #         test_wss = pickle.load(f)
     #     self.assertEqual(result.ErrorCode, 0)
     #     self.assertEqual(result.Codes, test_wss.Codes)
@@ -89,7 +97,7 @@ class TestWindPy(unittest.TestCase):
             },
             timeout=(5, 10)
         )
-        with open('../orgtest/test_wss.pkl', 'rb') as f:
+        with open('test_data/test_wss.pkl', 'rb') as f:
             test_wss = pickle.load(f)
         self.assertEqual(result.ErrorCode, 0)
         self.assertEqual(result.Codes, test_wss.Codes)
@@ -116,7 +124,7 @@ class TestWindPy(unittest.TestCase):
             timeout=(5, 10)
         )
 
-        with open('../orgtest/test_wsd.pkl', 'rb') as f:
+        with open('test_data/test_wsd.pkl', 'rb') as f:
             test_wsd = pickle.load(f)
         self.assertEqual(rtn.ErrorCode, 0)
         self.assertEqual(rtn.Codes, test_wsd.Codes)
@@ -144,7 +152,7 @@ class TestWindPy(unittest.TestCase):
             },
             timeout=(5, 10)
         )
-        with open('../orgtest/test_tdays.pkl', 'rb') as f:
+        with open('test_data/test_tdays.pkl', 'rb') as f:
             test_tdays = pickle.load(f)
         self.assertEqual(rtn.ErrorCode, 0)
         self.assertEqual(rtn.Times, test_tdays.Times)
@@ -171,7 +179,7 @@ class TestWindPy(unittest.TestCase):
             timeout=(5, 10)
         )
 
-        with open('../orgtest/test_tdaysoffset.pkl', 'rb') as f:
+        with open('test_data/test_tdaysoffset.pkl', 'rb') as f:
             test_tdaysoffset = pickle.load(f)
         self.assertEqual(rtn.ErrorCode, 0)
         self.assertEqual(rtn.Times, test_tdaysoffset.Times)
@@ -212,7 +220,7 @@ class TestWindPy(unittest.TestCase):
             timeout=(5, 10)
         )
 
-        with open('../orgtest/test_tdayscount.pkl', 'rb') as f:
+        with open('test_data/test_tdayscount.pkl', 'rb') as f:
             test_tdayscount = pickle.load(f)
         self.assertEqual(rtn.ErrorCode, 0)
         self.assertEqual(rtn.Data, test_tdayscount.Data)
@@ -235,7 +243,7 @@ class TestWindPy(unittest.TestCase):
                 "uid": 4136117
             }, timeout=(5, 10))
 
-        with open('../orgtest/test_wset.pkl', 'rb') as f:
+        with open('test_data/test_wset.pkl', 'rb') as f:
             test_wset = pickle.load(f)
         self.assertEqual(result.ErrorCode, 0)
         self.assertEqual(result.Fields, test_wset.Fields)
@@ -248,7 +256,7 @@ class TestWindPy(unittest.TestCase):
         """从pickle文件读取测试数据并执行测试"""
 
         # 读取pickle文件
-        with open('/Users/hongling/Dev/windagent/orgtest/test_wss_without_option.pkl', 'rb') as f:
+        with open('test_data/test_wss_without_option.pkl', 'rb') as f:
             test_value = pickle.load(f)
         print(test_value)
 
