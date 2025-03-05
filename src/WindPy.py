@@ -4,7 +4,7 @@ import requests
 
 class w:
     """Wind Python接口代理类"""
-    base_url = 'http://10.0.0.1:1234'
+    base_url = 'http://10.20.168.40:9001'
 
     REFLECT = [
         {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
