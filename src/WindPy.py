@@ -642,6 +642,37 @@ class w:
         return oldValue
 
     @staticmethod
+    def checkOrThrowResponse(res, orgurl):
+        try:
+            if res is None:
+                raise ValueError(f'访问函数{orgurl}错误：无效的返回值')
+            if res.json() is None:
+                raise ValueError(f'访问函数{orgurl}错误：未正确的返回JSON值')
+            data = res.json()
+            # 验证返回的JSON数据结构
+            if not isinstance(data, dict):
+                raise ValueError(f"访问函数{orgurl}错误： 需要JSON对象")
+            if 'result' not in data or not isinstance(data['result'], bool):
+                raise ValueError(
+                    f"访问函数{orgurl}错误：返回数据格式错误, 缺少result字段或类型不是boolean")
+            if 'errorCode' not in data or not isinstance(data['errorCode'], (int, float)):
+                raise ValueError(f"访问函数{orgurl}错误： 缺少errorCode字段或类型不是number")
+            if 'errorMessage' not in data or not isinstance(data['errorMessage'], str):
+                raise ValueError("返回数据格式错误: 缺少errorMessage字段或类型不是string")
+            if 'data' not in data:
+                raise ValueError(f"访问函数{orgurl}错误：缺少data字段")
+            if data['errorCode'] != 0:
+                raise ValueError(
+                    f"访问函数{orgurl}错误：出现错误，错误码{data['errorCode']}, 错误消息：{data['errorMessage']}")
+            if data['data'] is None:
+                raise ValueError(f"访问函数{orgurl}错误：无业务数据返回,Data为null")
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise e
+            else:
+                raise ValueError(f'访问地址:{orgurl}: 解析产生未知错误{e}') from e
+
+    @staticmethod
     def tdayscount(beginTime, endTime, options=None, *args, **kwargs):
         all_params = []
         if beginTime is None:
@@ -659,6 +690,8 @@ class w:
             else:
                 endTime = str(endTime)
         all_params.extend([beginTime, endTime])
+        if (isinstance(options, str)):
+            options = [s.strip() for s in options.split(';')]
         all_params.extend(w.unnamedParams2StrArr(options))
         all_params.extend(w.unnamedParams2StrArr(args))
         all_params.extend(w.namedParams2StrArr(kwargs))
@@ -669,6 +702,9 @@ class w:
             "ip": "",
             "uid": 4136117
         }, timeout=(5, 10))
+
+        w.checkOrThrowResponse(
+            res, "TDaysCount('" + "','".join(all_params) + "')")
 
         rtn = w.WindData()
         rtn.Times = [date.today()]

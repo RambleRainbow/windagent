@@ -185,7 +185,7 @@ class TestWindPy(unittest.TestCase):
         self.assertEqual(rtn.Times, test_tdaysoffset.Times)
         self.assertEqual(rtn.Data, test_tdaysoffset.Data)
 
-    def initMockResponse(self, mock_post, json_file):
+    def initMockResponse(self, mock_post, json_file='test_data/test_default_res.json'):
         """
         初始化模拟响应对象
 
@@ -259,6 +259,16 @@ class TestWindPy(unittest.TestCase):
         with open('test_data/test_wss_without_option.pkl', 'rb') as f:
             test_value = pickle.load(f)
         print(test_value)
+
+    @patch('requests.post')
+    def test_agent(self, mock_post):
+        self.initMockResponse(mock_post, 'test_data/test_tdayscount_res.json')
+        rtn = w.tdayscount("000857.SH", "tradeDate=-5;priceAdj=U")
+
+    @patch('requests.post')
+    def test_exception(self, mock_post):
+        self.initMockResponse(mock_post, 'test_data/test_error_res.json')
+        rtn = w.tdayscount("000857.SH", "tradeDate=-5;priceAdj=U")
 
 
 if __name__ == '__main__':
