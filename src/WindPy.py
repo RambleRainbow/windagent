@@ -4,8 +4,8 @@ import requests
 
 class w:
     """Wind Python接口代理类"""
-    base_url = 'http://10.20.168.40:9001'
-    DEFAULT_UID = 4136117
+    ENV_BASE_URL = 'http://10.20.168.40:9001'
+    ENV_UID = 4136117
 
     REFLECT = [
         {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
@@ -270,12 +270,12 @@ class w:
             raise ValueError('参数格式错误') from e
 
         command = "report " + " ".join(all_params)
-        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command',
+        res = requests.post(f'{w.ENV_BASE_URL}/sectormgmt/cloud/command',
                             json={
                                 'command': command,
                                 'isSuccess': True,
                                 'ip': '',
-                                'uid': w.DEFAULT_UID
+                                'uid': w.ENV_UID
                             },
                             timeout=(5, 10)
                             )
@@ -342,12 +342,12 @@ class w:
         all_params = [w.fieldValueReflect('WSD', param)
                       for param in all_params]
         command = "WSD('" + "','".join(all_params) + "')"
-        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command',
+        res = requests.post(f'{w.ENV_BASE_URL}/sectormgmt/cloud/command',
                             json={
                                 'command': command,
                                 'isSuccess': True,
                                 'ip': '',
-                                'uid': w.DEFAULT_UID
+                                'uid': w.ENV_UID
                             },
                             timeout=(5, 10)
                             )
@@ -399,12 +399,12 @@ class w:
 
         command = "WSS('" + "','".join(all_params) + "')"
         res = requests.post(
-            f'{w.base_url}/sectormgmt/cloud/command',
+            f'{w.ENV_BASE_URL}/sectormgmt/cloud/command',
             json={
                 'command': command,
                 'isSuccess': True,
                 'ip': '',
-                'uid': w.DEFAULT_UID
+                'uid': w.ENV_UID
             },
             timeout=(5, 10)
         )
@@ -504,11 +504,11 @@ class w:
         all_params.extend(args_kwargs_list)
 
         command = "TDAYS('" + "','".join(all_params) + "')"
-        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
+        res = requests.post(f'{w.ENV_BASE_URL}/sectormgmt/cloud/command', json={
             "command": command,
             "isSuccess": True,
             "ip": "",
-            "uid": w.DEFAULT_UID
+            "uid": w.ENV_UID
         },
             timeout=(5, 10))
         w.checkOrThrowResponse(res, command)
@@ -553,11 +553,11 @@ class w:
             'tdaysoffset', param) for param in all_params]
 
         command = "TDaysOffset('" + "','".join(all_params) + "')"
-        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
+        res = requests.post(f'{w.ENV_BASE_URL}/sectormgmt/cloud/command', json={
             "command": command,
             "isSuccess": True,
             "ip": "",
-            "uid": w.DEFAULT_UID
+            "uid": w.ENV_UID
         },
             timeout=(5, 10))
         w.checkOrThrowResponse(res, command)
@@ -709,11 +709,11 @@ class w:
         all_params.extend(w.namedParams2StrArr(kwargs))
 
         command = "TDaysCount('" + "','".join(all_params) + "')"
-        res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
+        res = requests.post(f'{w.ENV_BASE_URL}/sectormgmt/cloud/command', json={
             "command": command,
             "isSuccess": True,
             "ip": "",
-            "uid": w.DEFAULT_UID
+            "uid": w.ENV_UID
         }, timeout=(5, 10))
 
         w.checkOrThrowResponse(res, command)

@@ -20,6 +20,7 @@ load_dotenv()
 
 # 获取base_url，如果环境变量不存在则使用默认值
 base_url = os.getenv('BASEURL_CLOUD', 'http://10.0.0.1:1234')
+uid = 4136117
 
 
 class TestWindPy(unittest.TestCase):
@@ -31,7 +32,8 @@ class TestWindPy(unittest.TestCase):
             datefmt='%Y-%m-%d %H:%M:%S'
         )
         self.logger = logging.getLogger("TestWindPy")
-        w.base_url = base_url
+        w.ENV_BASE_URL = base_url
+        w.ENV_UID = uid
 
     # @patch('requests.post')
     # def test_wss_without_option(self, mock_post):
