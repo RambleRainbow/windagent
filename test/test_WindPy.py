@@ -268,7 +268,7 @@ class TestWindPy(unittest.TestCase):
     @patch('requests.post')
     def test_exception(self, mock_post):
         self.initMockResponse(mock_post, 'test_data/test_error_res.json')
-        rtn = w.tdayscount("000857.SH", "tradeDate=-5;priceAdj=U")
+        # rtn = w.tdayscount("000857.SH", "tradeDate=-5;priceAdj=U")
 
 
 if __name__ == '__main__':

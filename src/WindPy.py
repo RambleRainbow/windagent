@@ -268,15 +268,17 @@ class w:
         except Exception as e:
             raise ValueError('参数格式错误') from e
 
+        command = "report " + " ".join(all_params)
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command',
                             json={
-                                'command': "report " + " ".join(all_params),
+                                'command': command,
                                 'isSuccess': True,
                                 'ip': '',
                                 'uid': 4136117
                             },
                             timeout=(5, 10)
                             )
+        w.checkOrThrowResponse(res, command)
 
         json_data = res.json()
         rtn = w.WindData()
@@ -338,15 +340,17 @@ class w:
 
         all_params = [w.fieldValueReflect('WSD', param)
                       for param in all_params]
+        command = "WSD('" + "','".join(all_params) + "')"
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command',
                             json={
-                                'command': "WSD('" + "','".join(all_params) + "')",
+                                'command': command,
                                 'isSuccess': True,
                                 'ip': '',
                                 'uid': 4136117
                             },
                             timeout=(5, 10)
                             )
+        w.checkOrThrowResponse(res, command)
 
         rtn = w.WindData()
         rtn.Codes = codes_str.upper().split(',')
@@ -392,16 +396,18 @@ class w:
         all_params = [w.fieldValueReflect(
             'WSS', param) for param in all_params]
 
+        command = "WSS('" + "','".join(all_params) + "')"
         res = requests.post(
             f'{w.base_url}/sectormgmt/cloud/command',
             json={
-                'command': "WSS('" + "','".join(all_params) + "')",
+                'command': command,
                 'isSuccess': True,
                 'ip': '',
                 'uid': 4136117
             },
             timeout=(5, 10)
         )
+        w.checkOrThrowResponse(res, command)
 
         rtn = w.WindData()
         rtn.Times.append(datetime.now())
@@ -496,13 +502,16 @@ class w:
         args_kwargs_list = w.combineParams(args, kwargs)
         all_params.extend(args_kwargs_list)
 
+        command = "TDAYS('" + "','".join(all_params) + "')"
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
-            "command": "TDAYS('" + "','".join(all_params) + "')",
+            "command": command,
             "isSuccess": True,
             "ip": "",
             "uid": 4136117
         },
             timeout=(5, 10))
+        w.checkOrThrowResponse(res, command)
+
         rtn = w.WindData()
         rtn.Times = [w.fromChar8Date(days) for days in res.json()[
             'data']['report']['reportColumns'][0]['values']]
@@ -542,13 +551,15 @@ class w:
         all_params = [w.fieldValueReflect(
             'tdaysoffset', param) for param in all_params]
 
+        command = "TDaysOffset('" + "','".join(all_params) + "')"
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
-            "command": "TDaysOffset('" + "','".join(all_params) + "')",
+            "command": command,
             "isSuccess": True,
             "ip": "",
             "uid": 4136117
         },
             timeout=(5, 10))
+        w.checkOrThrowResponse(res, command)
 
         rtn = w.WindData()
         rtn.Times = [w.fromChar8Date(days) for days in res.json()[
@@ -696,15 +707,15 @@ class w:
         all_params.extend(w.unnamedParams2StrArr(args))
         all_params.extend(w.namedParams2StrArr(kwargs))
 
+        command = "TDaysCount('" + "','".join(all_params) + "')"
         res = requests.post(f'{w.base_url}/sectormgmt/cloud/command', json={
-            "command": "TDaysCount('" + "','".join(all_params) + "')",
+            "command": command,
             "isSuccess": True,
             "ip": "",
             "uid": 4136117
         }, timeout=(5, 10))
 
-        w.checkOrThrowResponse(
-            res, "TDaysCount('" + "','".join(all_params) + "')")
+        w.checkOrThrowResponse(res, command)
 
         rtn = w.WindData()
         rtn.Times = [date.today()]
