@@ -5,6 +5,7 @@ import requests
 class w:
     """Wind Python接口代理类"""
     base_url = 'http://10.20.168.40:9001'
+    DEFAULT_UID = 4136117
 
     REFLECT = [
         {"func": "TDAYSOFFSET", "field": "PERIOD", "values": [
@@ -274,7 +275,7 @@ class w:
                                 'command': command,
                                 'isSuccess': True,
                                 'ip': '',
-                                'uid': 4136117
+                                'uid': w.DEFAULT_UID
                             },
                             timeout=(5, 10)
                             )
@@ -346,7 +347,7 @@ class w:
                                 'command': command,
                                 'isSuccess': True,
                                 'ip': '',
-                                'uid': 4136117
+                                'uid': w.DEFAULT_UID
                             },
                             timeout=(5, 10)
                             )
@@ -403,7 +404,7 @@ class w:
                 'command': command,
                 'isSuccess': True,
                 'ip': '',
-                'uid': 4136117
+                'uid': w.DEFAULT_UID
             },
             timeout=(5, 10)
         )
@@ -507,7 +508,7 @@ class w:
             "command": command,
             "isSuccess": True,
             "ip": "",
-            "uid": 4136117
+            "uid": w.DEFAULT_UID
         },
             timeout=(5, 10))
         w.checkOrThrowResponse(res, command)
@@ -556,7 +557,7 @@ class w:
             "command": command,
             "isSuccess": True,
             "ip": "",
-            "uid": 4136117
+            "uid": w.DEFAULT_UID
         },
             timeout=(5, 10))
         w.checkOrThrowResponse(res, command)
@@ -712,7 +713,7 @@ class w:
             "command": command,
             "isSuccess": True,
             "ip": "",
-            "uid": 4136117
+            "uid": w.DEFAULT_UID
         }, timeout=(5, 10))
 
         w.checkOrThrowResponse(res, command)
